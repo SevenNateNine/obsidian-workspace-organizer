@@ -1,0 +1,17 @@
+node_modules/
+
+# Build output — attached to GitHub releases, not committed
+main.js
+main.js.map
+
+# Plugin settings and workspace metadata
+data.json
+
+*.log
+*.tsbuildinfo
+coverage/
+.DS_Store
+Thumbs.db
+
+# Local Claude Code settings, not shared
+.claude/settings.local.json

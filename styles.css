@@ -1,0 +1,141 @@
+/* Workspace Organizer
+   Every colour and space comes from a theme variable, so the plugin follows
+   whatever theme the user runs rather than imposing its own palette. */
+
+/* --- switcher: tag filter bar --- */
+
+.ew-tagbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-2-2);
+	padding: var(--size-4-2) var(--size-4-3);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.ew-tagbar.is-empty {
+	display: none;
+}
+
+.ew-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-2-1);
+	padding: 2px var(--size-2-2);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	font-size: var(--font-smaller);
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.ew-chip:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.ew-chip.is-active {
+	background-color: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.ew-chip-count {
+	opacity: 0.6;
+	font-variant-numeric: tabular-nums;
+}
+
+/* --- switcher: one workspace row --- */
+
+.ew-item {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.ew-title {
+	display: flex;
+	align-items: baseline;
+	gap: var(--size-2-2);
+}
+
+.ew-name {
+	font-weight: var(--font-medium);
+}
+
+.ew-item.is-active .ew-name {
+	color: var(--text-accent);
+}
+
+.ew-badge {
+	padding: 0 var(--size-2-1);
+	border-radius: var(--radius-s);
+	background-color: var(--background-modifier-success);
+	color: var(--text-muted);
+	font-size: var(--font-smallest);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.ew-badge-muted {
+	background-color: var(--background-modifier-border);
+}
+
+/* Tags sit at the far end of the row, away from the name. */
+.ew-tags {
+	display: flex;
+	gap: var(--size-2-1);
+	margin-left: auto;
+	overflow: hidden;
+}
+
+.ew-tag {
+	color: var(--text-accent);
+	font-size: var(--font-smaller);
+	white-space: nowrap;
+}
+
+/* One line only: the full text is on the row's title attribute. */
+.ew-sub {
+	color: var(--text-muted);
+	font-size: var(--font-smaller);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* --- settings and modals --- */
+
+.ew-prompt-input {
+	width: 100%;
+	margin-bottom: var(--size-4-2);
+}
+
+.ew-preview {
+	margin-top: 0;
+	color: var(--text-muted);
+	font-size: var(--font-smaller);
+}
+
+.ew-warning {
+	padding: var(--size-4-2) var(--size-4-3);
+	border-radius: var(--radius-s);
+	background-color: var(--background-modifier-error);
+	color: var(--text-error);
+}
+
+.ew-empty {
+	color: var(--text-muted);
+}
+
+/* Sits directly under the graph dropdown, explaining what it resolved to. */
+.ew-graph-status {
+	margin: calc(-1 * var(--size-4-2)) 0 var(--size-4-4);
+	color: var(--text-muted);
+	font-size: var(--font-smaller);
+}
+
+/* Archived rows stay legible but recede, since they are out of rotation. */
+.ew-archived-row .setting-item-name {
+	color: var(--text-muted);
+	text-decoration: line-through;
+}

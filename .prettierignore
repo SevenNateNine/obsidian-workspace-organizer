@@ -1,0 +1,10 @@
+node_modules/
+main.js
+main.js.map
+data.json
+package-lock.json
+
+# Captured from a real vault, byte for byte. The round-trip test asserts our
+# output equals this file, so reformatting it would break the one check that
+# proves we write workspaces.json the way Obsidian does.
+test/fixtures/
