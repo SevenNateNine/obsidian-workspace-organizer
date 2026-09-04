@@ -67,19 +67,12 @@ export default tseslint.config(
 	},
 	{
 		files: ["src/**/domain/**/*.ts"],
-		ignores: ["src/**/*.test.ts"],
 		rules: DOMAIN_IMPORT_BOUNDARY,
-	},
-	{
-		// Obsidian settings screens are one long declarative builder chain per
-		// tab. Splitting them to satisfy a line budget hurts more than it helps.
-		files: ["src/ui/SettingsTab.ts"],
-		rules: { "max-lines-per-function": "off" },
 	},
 	{
 		// A table-driven test case is one `it()` per behaviour; the budget is
 		// about production control flow, not assertion count.
-		files: ["src/**/*.test.ts"],
+		files: ["test/**/*.ts"],
 		rules: { "max-lines-per-function": "off" },
 	},
 );

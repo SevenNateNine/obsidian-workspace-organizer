@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertActionsComplete, createActions } from "./actions";
+import { assertActionsComplete, createActions } from "@/shared/actions";
 
 describe("createActions", () => {
 	it("throws when an unregistered action is called", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { graphOptionsDiffer } from "./graphDiff";
+import { graphOptionsDiffer } from "@/features/graph/domain/graphDiff";
 
 const GRAPH = {
 	search: "shark",

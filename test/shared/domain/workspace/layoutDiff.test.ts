@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { layoutsDiffer } from "./layoutDiff";
+import { layoutsDiffer } from "@/shared/domain/workspace/layoutDiff";
 
 const STORED = {
 	main: { type: "split", children: [{ type: "leaf", file: "Chapter 1.md" }] },

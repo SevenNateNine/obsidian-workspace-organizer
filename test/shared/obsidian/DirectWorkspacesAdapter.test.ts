@@ -2,16 +2,14 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "obsidian";
-import { DirectWorkspacesAdapter } from "./DirectWorkspacesAdapter";
+import { DirectWorkspacesAdapter } from "@/shared/obsidian/DirectWorkspacesAdapter";
 
 const WORKSPACES = ".obsidian/workspaces.json";
 const CORE_PLUGINS = ".obsidian/core-plugins.json";
 
 /** A real file written by core, trimmed to two workspaces. */
 const SAMPLE = readFileSync(
-	fileURLToPath(
-		new URL("../../../test/fixtures/workspaces.sample.json", import.meta.url),
-	),
+	fileURLToPath(new URL("../../fixtures/workspaces.sample.json", import.meta.url)),
 	"utf8",
 );
 

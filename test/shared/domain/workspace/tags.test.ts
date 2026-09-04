@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasAllTags, normalizeTag, parseTags } from "./tags";
+import { hasAllTags, normalizeTag, parseTags } from "@/shared/domain/workspace/tags";
 
 describe("normalizeTag", () => {
 	it("strips a leading hash and lower cases", () => {

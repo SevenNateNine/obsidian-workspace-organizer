@@ -7,10 +7,11 @@
 	"private": true,
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
-		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"typecheck": "tsc -noEmit -skipLibCheck -p tsconfig.json && tsc -noEmit -skipLibCheck -p tsconfig.test.json",
+		"build": "npm run typecheck && node esbuild.config.mjs production",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"lint": "eslint src --max-warnings 0",
+		"lint": "eslint src test --max-warnings 0",
 		"format": "prettier --write .",
 		"format:check": "prettier --check ."
 	},

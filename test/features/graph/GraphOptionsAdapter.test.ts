@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { App } from "obsidian";
-import { GraphOptionsAdapter } from "./GraphOptionsAdapter";
+import { GraphOptionsAdapter } from "@/features/graph/GraphOptionsAdapter";
 
 interface FakeInstance {
 	options?: unknown;

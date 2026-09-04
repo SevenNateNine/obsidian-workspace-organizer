@@ -6,13 +6,11 @@ import {
 	formatMtime,
 	parseWorkspacesFile,
 	serializeWorkspacesFile,
-} from "./workspaceFile";
+} from "@/shared/domain/workspace/workspaceFile";
 
 /** A real file written by core, trimmed to two workspaces. */
 const SAMPLE = readFileSync(
-	fileURLToPath(
-		new URL("../../../../test/fixtures/workspaces.sample.json", import.meta.url),
-	),
+	fileURLToPath(new URL("../../../fixtures/workspaces.sample.json", import.meta.url)),
 	"utf8",
 );
 

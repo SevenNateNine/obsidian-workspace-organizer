@@ -4,7 +4,7 @@ import {
 	enabledCommunityPluginIds,
 	isCoreWorkspacesEnabled,
 	parseEnabledIds,
-} from "./pluginState";
+} from "@/shared/obsidian/pluginState";
 
 describe("parseEnabledIds", () => {
 	it("reads the object form Obsidian writes today", () => {

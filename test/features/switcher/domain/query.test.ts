@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countTags, parseQuery } from "./query";
+import { countTags, parseQuery } from "@/features/switcher/domain/query";
 
 describe("parseQuery", () => {
 	it("separates tags from search text", () => {

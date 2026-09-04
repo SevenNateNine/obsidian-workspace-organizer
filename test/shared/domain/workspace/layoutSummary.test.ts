@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { formatSummary, summarizeLayout } from "./layoutSummary";
+import {
+	formatSummary,
+	summarizeLayout,
+} from "@/shared/domain/workspace/layoutSummary";
 
 /** A markdown editor tab, shaped the way core stores one. */
 function fileLeaf(file: string) {

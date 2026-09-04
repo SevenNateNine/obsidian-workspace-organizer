@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GRAPH_OWNERS, resolveGraphMode } from "./graphOwners";
+import { GRAPH_OWNERS, resolveGraphMode } from "@/features/graph/domain/graphOwners";
 
 describe("resolveGraphMode", () => {
 	const owners = Object.keys(GRAPH_OWNERS);

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { migrateData, normalizeMeta } from "./migrations";
-import { CURRENT_SCHEMA_VERSION, DEFAULT_SETTINGS } from "./PluginSettings";
+import { migrateData, normalizeMeta } from "@/shared/domain/settings/migrations";
+import {
+	CURRENT_SCHEMA_VERSION,
+	DEFAULT_SETTINGS,
+} from "@/shared/domain/settings/PluginSettings";
 
 describe("migrateData", () => {
 	it("returns defaults for a first run", () => {

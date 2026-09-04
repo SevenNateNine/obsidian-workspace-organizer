@@ -15,6 +15,10 @@ const prod = process.argv[2] === "production";
 // and Obsidian mobile has no Node.
 const context = await esbuild.context({
 	banner: { js: banner },
+	// Pinned so a `paths` entry added to another tsconfig can never reach the
+	// bundle. esbuild honours tsconfig `baseUrl` and `paths` where it finds them,
+	// and only the test config declares any.
+	tsconfig: "tsconfig.json",
 	entryPoints: ["src/main.ts"],
 	bundle: true,
 	external: [
