@@ -97,3 +97,13 @@ owned by their slices, and the override is gone. This is the removal plan the ro
 
 **Update row 3** (`app.internalPlugins`). Location becomes
 `src/features/graph/GraphOptionsAdapter.ts`. Nothing else changes.
+
+## 8. Session start and the layout row
+
+Step 1 becomes: Read this file, `README.md`, and `ARCHITECTURE.md`.
+
+Append to the **File and folder layout** Decision cell: `ARCHITECTURE.md` holds the slice table,
+the allowed edges, and the steps to add a slice.
+
+Reason: the layout and its rules now live in one document next to the README, so this file does
+not repeat them.

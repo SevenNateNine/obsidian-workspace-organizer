@@ -91,7 +91,7 @@ npm run build   # type check, then a minified main.js
 
 The plugin lives inside the vault at `.obsidian/plugins/obsidian-workspace-organizer`, so `npm run dev` plus an Obsidian reload is the whole loop.
 
-`src/features/` holds one folder per feature. `src/shared/` holds what more than one feature needs. Inside either, a `domain/` folder imports no Obsidian API, which is what makes it testable. `test/` mirrors `src/`. See `AGENTS.md` for the full conventions.
+`src/features/` holds one folder per feature, and `src/shared/` holds what more than one feature needs. `ARCHITECTURE.md` explains the layout and its rules. `AGENTS.md` holds the coding conventions.
 
 ## Credit
 
