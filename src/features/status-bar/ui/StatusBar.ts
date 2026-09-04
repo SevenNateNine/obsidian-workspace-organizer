@@ -1,14 +1,7 @@
 import { Menu } from "obsidian";
-import type { StatusBarSettings } from "../../../shared/domain/settings/PluginSettings";
+import type { SliceContext } from "../../../shared/context";
 import type { StatusBarAction } from "../../../shared/domain/settings/vocabulary";
-
-export interface StatusBarDeps {
-	settings: () => StatusBarSettings;
-	activeName: () => string | null;
-	run: (action: StatusBarAction) => void;
-	/** Fills the right-click menu, and the "menu" action on any button. */
-	buildMenu: (menu: Menu) => void;
-}
+import { buildMenu, run } from "../run";
 
 /**
  * Shows the active workspace, and turns each mouse button into an action.
@@ -19,31 +12,31 @@ export interface StatusBarDeps {
 export class StatusBar {
 	constructor(
 		private readonly el: HTMLElement,
-		private readonly deps: StatusBarDeps,
+		private readonly ctx: SliceContext,
 	) {
 		el.addClass("ew-statusbar", "mod-clickable");
 
 		el.addEventListener("click", (event) =>
-			this.fire(event, this.deps.settings().click),
+			this.fire(event, this.ctx.settings().statusBar.click),
 		);
 		el.addEventListener("auxclick", (event) => {
 			// Button 1 is the middle button. Anything else is already handled.
-			if (event.button === 1) this.fire(event, this.deps.settings().middleClick);
+			if (event.button === 1)
+				this.fire(event, this.ctx.settings().statusBar.middleClick);
 		});
 		el.addEventListener("contextmenu", (event) =>
-			this.fire(event, this.deps.settings().rightClick),
+			this.fire(event, this.ctx.settings().statusBar.rightClick),
 		);
 	}
 
 	render(): void {
-		const settings = this.deps.settings();
-		if (!settings.enabled) {
+		if (!this.ctx.settings().statusBar.enabled) {
 			this.el.hide();
 			return;
 		}
 
 		this.el.show();
-		const active = this.deps.activeName();
+		const active = this.ctx.registry().activeName();
 		this.el.setText(active ?? "No workspace");
 		this.el.setAttr(
 			"aria-label",
@@ -57,11 +50,11 @@ export class StatusBar {
 
 		if (action === "menu") {
 			const menu = new Menu();
-			this.deps.buildMenu(menu);
+			buildMenu(this.ctx, menu);
 			menu.showAtMouseEvent(event);
 			return;
 		}
 
-		this.deps.run(action);
+		run(this.ctx, action);
 	}
 }

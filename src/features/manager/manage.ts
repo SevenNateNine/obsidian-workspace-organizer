@@ -1,7 +1,7 @@
 import type { SliceContext } from "../../shared/context";
 import { ConfirmModal, PromptModal } from "../../shared/ui/prompts";
 
-/** Rename, duplicate, and delete. Each asks first, then reports one failure. */
+/** Every action asks first, then reports one failure. */
 export function createManageActions(ctx: SliceContext): {
 	promptRename(name: string, after?: () => void): void;
 	promptDuplicate(name: string, after?: () => void): void;

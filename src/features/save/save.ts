@@ -5,7 +5,6 @@ import type { GraphService } from "../graph";
 
 /** What the switch slice needs from this one, and nothing more. */
 export interface SaveService {
-	/** Save the layout under `name`, creating or overwriting it. */
 	saveWorkspace(name: string): Promise<void>;
 	/** Save over the active workspace, or ask for a name when there is none. */
 	saveActive(): Promise<void>;

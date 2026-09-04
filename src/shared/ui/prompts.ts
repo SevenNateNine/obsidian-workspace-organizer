@@ -65,7 +65,6 @@ export class PromptModal extends Modal {
 	}
 }
 
-/** Confirm something destructive. */
 export class ConfirmModal extends Modal {
 	constructor(
 		app: App,

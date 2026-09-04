@@ -30,8 +30,6 @@ export function dedupe(tags: readonly string[]): string[] {
 }
 
 /**
- * True when `tags` carries every tag in `required`.
- *
  * AND rather than OR: selecting a second chip should narrow the list. OR would
  * make each extra chip show more, which reads as the filter not working.
  */

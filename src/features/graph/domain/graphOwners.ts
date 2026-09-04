@@ -34,8 +34,6 @@ export interface GraphModeResolution {
 }
 
 /**
- * Turn the setting plus the enabled plugin list into a yes or no.
- *
  * `enabledIds` is read fresh at each decision point rather than cached, because
  * Obsidian fires no documented event when another plugin is turned on or off.
  */

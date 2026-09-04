@@ -19,8 +19,6 @@ import { dedupe, normalizeTag } from "../workspace/tags";
 import { isRecord } from "../util";
 
 /**
- * Bring persisted data up to the current schema.
- *
  * Obsidian returns whatever the last version of this plugin wrote, which can be
  * older than this build, and a user can edit the file by hand. Everything here
  * treats the input as untrusted and merges onto known-good defaults.
@@ -91,8 +89,6 @@ export function normalizeMetaMap(raw: unknown): Record<string, WorkspaceMeta> {
 }
 
 /**
- * Coerce one stored entry into a usable `WorkspaceMeta`.
- *
  * Also used by the embedded store, where the value comes out of
  * `workspaces.json` and may have been written by a different plugin version.
  */

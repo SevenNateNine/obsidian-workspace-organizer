@@ -1,17 +1,8 @@
-import { App, FuzzySuggestModal, type FuzzyMatch } from "obsidian";
-import type {
-	WorkspaceEntry,
-	WorkspaceRegistry,
-} from "../../../shared/domain/workspace/WorkspaceRegistry";
-import type { PluginSettings } from "../../../shared/domain/settings/PluginSettings";
+import { FuzzySuggestModal, type FuzzyMatch } from "obsidian";
+import type { SliceContext } from "../../../shared/context";
+import type { WorkspaceEntry } from "../../../shared/domain/workspace/WorkspaceRegistry";
 import { countTags, parseQuery } from "../domain/query";
-import { describeWorkspace } from "../../../shared/ui/describe";
-
-export interface SwitcherDeps {
-	registry: WorkspaceRegistry;
-	settings: PluginSettings;
-	onChoose: (name: string) => void;
-}
+import { describeEntry } from "../../../shared/ui/describe";
 
 export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 	/** Tags picked from the chip bar. */
@@ -21,12 +12,9 @@ export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 	private showArchived: boolean;
 	private chipBar: HTMLElement | null = null;
 
-	constructor(
-		app: App,
-		private readonly deps: SwitcherDeps,
-	) {
-		super(app);
-		this.showArchived = deps.settings.showArchived;
+	constructor(private readonly ctx: SliceContext) {
+		super(ctx.app);
+		this.showArchived = ctx.settings().showArchived;
 
 		this.setPlaceholder("Switch workspace…");
 		this.setInstructions([
@@ -48,7 +36,7 @@ export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 	}
 
 	getItems(): WorkspaceEntry[] {
-		return this.deps.registry.filtered({
+		return this.ctx.registry().filtered({
 			tags: [...this.chosenTags, ...this.queryTags],
 			includeArchived: this.showArchived,
 		});
@@ -73,11 +61,7 @@ export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 
 	override renderSuggestion(match: FuzzyMatch<WorkspaceEntry>, el: HTMLElement): void {
 		const { name, meta, isActive } = match.item;
-		const { primary, tooltip } = describeWorkspace(
-			this.deps.registry.layoutOf(name),
-			meta,
-			this.deps.settings.previewNameCount,
-		);
+		const { primary, tooltip } = describeEntry(this.ctx, match.item);
 
 		el.addClass("ew-item");
 		el.setAttr("title", tooltip);
@@ -96,7 +80,7 @@ export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 	}
 
 	onChooseItem(entry: WorkspaceEntry): void {
-		this.deps.onChoose(entry.name);
+		this.ctx.actions.switchTo(entry.name);
 	}
 
 	/**
@@ -108,7 +92,7 @@ export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 		if (!bar) return;
 		bar.empty();
 
-		const all = this.deps.registry.entries();
+		const all = this.ctx.registry().entries();
 		const anyArchived = all.some((entry) => entry.meta.archived);
 
 		for (const { tag, count } of countTags(all.map((entry) => entry.meta))) {

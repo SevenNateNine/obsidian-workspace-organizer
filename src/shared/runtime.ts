@@ -69,8 +69,6 @@ export function createRuntime(plugin: Plugin, initial: PersistedData): PluginRun
 		},
 
 		/**
-		 * Re-read the file and the core plugin state, then rebuild the metadata.
-		 *
 		 * Runs before anything that shows a list, because the vault can be synced
 		 * from another device or edited by hand while the plugin is running.
 		 */
@@ -83,8 +81,6 @@ export function createRuntime(plugin: Plugin, initial: PersistedData): PluginRun
 		},
 
 		/**
-		 * Run an action, reporting any failure once, in the user's language.
-		 *
 		 * Every action goes through here, which is what keeps the graph mode
 		 * current without an event to subscribe to. A failed read leaves the last
 		 * answer in place rather than stopping the action.

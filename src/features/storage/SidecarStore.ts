@@ -7,21 +7,19 @@ import type { WorkspaceMeta } from "../../shared/domain/workspace/meta";
  *
  * The default, because it leaves `workspaces.json` byte-for-byte what vanilla
  * Obsidian writes. Settings live in the same file, so both share one read and
- * one write through the owner below.
+ * one write.
  */
-export interface DataOwner {
-	current(): PersistedData;
-	replace(data: PersistedData): Promise<void>;
-}
-
 export class SidecarStore implements MetaStore {
-	constructor(private readonly owner: DataOwner) {}
+	constructor(
+		private readonly data: () => PersistedData,
+		private readonly replaceData: (data: PersistedData) => Promise<void>,
+	) {}
 
 	async read(): Promise<Record<string, WorkspaceMeta>> {
-		return this.owner.current().workspaces;
+		return this.data().workspaces;
 	}
 
 	async write(workspaces: Record<string, WorkspaceMeta>): Promise<void> {
-		await this.owner.replace({ ...this.owner.current(), workspaces });
+		await this.replaceData({ ...this.data(), workspaces });
 	}
 }

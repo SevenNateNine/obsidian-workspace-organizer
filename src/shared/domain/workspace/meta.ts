@@ -6,7 +6,6 @@
  * chooses. See `MetaStore`.
  */
 
-/** Everything this plugin knows about a workspace that core does not store. */
 export interface WorkspaceMeta {
 	/** Flat, normalized, no leading "#". See `tags.ts`. */
 	tags: string[];

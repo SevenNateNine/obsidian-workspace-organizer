@@ -42,7 +42,6 @@ export function reconcile(
 	return { workspaces, changed: !sameMap(stored, workspaces) };
 }
 
-/** Move one workspace's metadata to a new name, for rename. */
 export function renameKey(
 	stored: Readonly<Record<string, WorkspaceMeta>>,
 	from: string,
@@ -56,8 +55,6 @@ export function renameKey(
 }
 
 /**
- * Move a workspace up or down in the manager.
- *
  * Returns the map unchanged when the move would fall off either end, so the
  * caller can skip a pointless write.
  */

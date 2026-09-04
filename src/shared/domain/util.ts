@@ -8,8 +8,6 @@
  */
 
 /**
- * Tell whether a value is a plain object.
- *
  * An array is not a record here. Core's layout tree and our own `data.json`
  * are both untrusted, and an unknown shape must read as absent, never crash.
  */

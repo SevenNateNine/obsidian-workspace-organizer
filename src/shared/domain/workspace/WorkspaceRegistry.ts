@@ -35,17 +35,10 @@ export class WorkspaceRegistry {
 	) {}
 
 	/**
-	 * Re-derive metadata from core's current list.
-	 *
 	 * Call before any read. Core fires no change events, so this is the only
 	 * thing keeping us honest when a workspace is created or deleted elsewhere.
 	 */
 	async refresh(): Promise<void> {
-		if (!this.core.isAvailable()) {
-			this.metas = {};
-			return;
-		}
-
 		const { workspaces, changed } = reconcile(
 			this.core.list(),
 			await this.store.read(),
@@ -56,7 +49,7 @@ export class WorkspaceRegistry {
 
 	/** Every workspace in manager order, archived ones included. */
 	entries(): WorkspaceEntry[] {
-		const active = this.core.isAvailable() ? this.core.activeName() : null;
+		const active = this.activeName();
 
 		return sortedNames(this.metas).map((name) => ({
 			name,
@@ -65,7 +58,6 @@ export class WorkspaceRegistry {
 		}));
 	}
 
-	/** What the switcher shows. */
 	filtered(filter: Filter): WorkspaceEntry[] {
 		return this.entries().filter(
 			(entry) =>
@@ -79,21 +71,15 @@ export class WorkspaceRegistry {
 	}
 
 	layoutOf(name: string): unknown {
-		return this.core.isAvailable() ? this.core.layoutOf(name) : null;
+		return this.core.layoutOf(name);
 	}
 
-	/** True when the layout on screen differs from what `name` holds. */
 	hasUnsavedChanges(name: string): boolean {
-		if (!this.core.isAvailable()) return true;
 		return layoutsDiffer(this.core.liveLayout(), this.core.layoutOf(name));
 	}
 
 	activeName(): string | null {
-		return this.core.isAvailable() ? this.core.activeName() : null;
-	}
-
-	isAvailable(): boolean {
-		return this.core.isAvailable();
+		return this.core.activeName();
 	}
 
 	/**
@@ -104,7 +90,6 @@ export class WorkspaceRegistry {
 		return this.core.canMutate();
 	}
 
-	/** Save the live layout under `name`, creating it or overwriting it. */
 	async save(name: string): Promise<void> {
 		this.requireWritable();
 		const clean = this.requireName(name);
@@ -119,8 +104,6 @@ export class WorkspaceRegistry {
 	}
 
 	/**
-	 * Rename by copying the stored layout to the new name and dropping the old.
-	 *
 	 * The layout is moved as-is rather than re-captured from the screen, so
 	 * renaming a workspace you are not currently in does not quietly replace its
 	 * panes with the ones in front of you.
@@ -179,7 +162,6 @@ export class WorkspaceRegistry {
 		await this.persist();
 	}
 
-	/** Move a workspace up or down the manager list. */
 	async moveBy(name: string, delta: number): Promise<void> {
 		this.metas = move(this.metas, name, delta);
 		await this.persist();

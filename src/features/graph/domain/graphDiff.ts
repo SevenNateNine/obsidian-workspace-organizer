@@ -17,8 +17,6 @@ const VOLATILE_GRAPH_KEYS = [
 ];
 
 /**
- * Tell whether the graph settings on screen still match the stored snapshot.
- *
  * Same contract as `layoutsDiffer`: anything unreadable answers "changed". A
  * needless prompt costs one click, and a missed change loses the settings the
  * user arranged.

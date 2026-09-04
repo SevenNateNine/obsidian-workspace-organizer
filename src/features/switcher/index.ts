@@ -15,11 +15,7 @@ export function registerSwitcher(ctx: SliceContext): void {
 			// Reload first: the vault can be synced from another device or edited
 			// by hand while the plugin is running.
 			await ctx.reload();
-			new SwitcherModal(ctx.app, {
-				registry: ctx.registry(),
-				settings: ctx.settings(),
-				onChoose: (name) => ctx.actions.switchTo(name),
-			}).open();
+			new SwitcherModal(ctx).open();
 		});
 	};
 

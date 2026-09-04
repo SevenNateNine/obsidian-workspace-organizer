@@ -18,14 +18,7 @@ export function managerSection(
 		return;
 	}
 
-	const { previewNameCount } = ctx.settings();
-
 	for (const [index, entry] of entries.entries()) {
-		workspaceRow(ctx, container, redraw, {
-			entry,
-			index,
-			total: entries.length,
-			previewNameCount,
-		});
+		workspaceRow(ctx, container, redraw, { entry, index, total: entries.length });
 	}
 }

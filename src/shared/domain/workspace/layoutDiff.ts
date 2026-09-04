@@ -5,8 +5,6 @@ import { isRecord, stableText } from "../util";
 const STORED_ONLY_KEY = "mtime";
 
 /**
- * Tell whether the layout on screen still matches the stored workspace.
- *
  * The layout shape is private and core can change it without notice, so every
  * uncertainty answers "changed". A needless prompt costs one click. A missed
  * change loses the panes the user arranged.

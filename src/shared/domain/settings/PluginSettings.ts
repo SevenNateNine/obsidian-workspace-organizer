@@ -68,7 +68,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	},
 };
 
-/** The whole of our `data.json`. */
 export interface PersistedData {
 	schemaVersion: number;
 	settings: PluginSettings;

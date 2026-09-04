@@ -11,8 +11,6 @@ import type { DataAdapter } from "obsidian";
 const CORE_WORKSPACES_ID = "workspaces";
 
 /**
- * Report whether the core Workspaces plugin is turned on.
- *
  * This plugin writes `workspaces.json` itself. Core writes the same file and
  * caches it in memory, so with both running the two overwrite each other and a
  * workspace disappears without a message. We refuse to write while core is on,
@@ -27,10 +25,8 @@ export async function isCoreWorkspacesEnabled(
 }
 
 /**
- * The ids of every enabled community plugin.
- *
  * Used to notice another plugin that owns the graph settings, see
- * `core/domain/graphOwners.ts`. Read again at each decision point rather than
+ * `features/graph/domain/graphOwners.ts`. Read again at each decision point rather than
  * cached, because Obsidian fires no documented event when a plugin is turned on
  * or off, and the file is tiny.
  */

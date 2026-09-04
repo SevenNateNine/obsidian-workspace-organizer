@@ -4,14 +4,11 @@ import type { StorageMode } from "../../shared/domain/settings/vocabulary";
 import { EmbeddedStore } from "./EmbeddedStore";
 import { SidecarStore } from "./SidecarStore";
 
-/** Build the store for a mode. Both read and write the same metadata shape. */
+/** Both modes read and write the same metadata shape. */
 export function createStore(ctx: SliceContext, mode: StorageMode): MetaStore {
-	if (mode === "embedded") return new EmbeddedStore(ctx.embeddedMeta());
-
-	return new SidecarStore({
-		current: () => ctx.data(),
-		replace: (data) => ctx.replaceData(data),
-	});
+	return mode === "embedded"
+		? new EmbeddedStore(ctx.embeddedMeta())
+		: new SidecarStore(ctx.data, ctx.replaceData);
 }
 
 /**

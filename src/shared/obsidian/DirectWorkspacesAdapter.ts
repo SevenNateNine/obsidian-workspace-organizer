@@ -22,8 +22,8 @@ const META_KEY = "extendedWorkspaces";
  * the vault adapter for the file. Nothing here depends on `internalPlugins`,
  * so no undocumented shape can break it.
  *
- * The file format lives in `core/domain/workspaceFile.ts` and is tested against
- * a real core-written file.
+ * The file format lives in `shared/domain/workspace/workspaceFile.ts`, and is
+ * tested against a real core-written file.
  *
  * Core must be turned off. Both plugins writing the same file, which core also
  * caches in memory, loses a workspace with no message. `canMutate` reports
@@ -40,8 +40,6 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 	}
 
 	/**
-	 * Re-read the file and the core plugin state.
-	 *
 	 * Called before a read, because the vault can be synced from another device
 	 * or edited by hand while the plugin is running.
 	 */
@@ -62,13 +60,9 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 		}
 	}
 
-	/** True when core is on, which means this plugin must not write. */
+	/** This plugin must not write while core is on. */
 	isBlockedByCore(): boolean {
 		return this.coreEnabled;
-	}
-
-	isAvailable(): boolean {
-		return true;
 	}
 
 	canMutate(): boolean {
@@ -93,8 +87,6 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 	}
 
 	/**
-	 * Capture what is on screen now and store it under `name`.
-	 *
 	 * Embedded metadata lives on the entry, and `getLayout` cannot know about it.
 	 * Dropping the key here makes `reconcile` treat the workspace as newly seen,
 	 * which resets its tags, description, archived flag, and order. Carry it over.
@@ -112,8 +104,6 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 	}
 
 	/**
-	 * Store a layout we already hold, for rename and duplicate.
-	 *
 	 * The clone matters: sharing one object between two names would make a later
 	 * edit to either silently change both.
 	 */
@@ -143,8 +133,6 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 		await this.flush();
 	}
 
-	// --- embedded storage mode -------------------------------------------
-
 	readMeta(): Record<string, unknown> {
 		const out: Record<string, unknown> = {};
 
@@ -170,8 +158,6 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 	}
 
 	/**
-	 * Write the file.
-	 *
 	 * Refuses while core is on. Every caller is guarded already, so reaching
 	 * here means a guard was missed, and the cost of that is a lost workspace.
 	 */

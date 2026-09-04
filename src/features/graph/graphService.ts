@@ -13,14 +13,11 @@ import { resolveGraphMode, type GraphModeResolution } from "./domain/graphOwners
 export interface GraphService {
 	/** What the settings tab reports, so the user can see what auto decided. */
 	resolution(): GraphModeResolution;
-	/** Whether to capture and apply graph settings at all right now. */
 	isActive(): boolean;
 	/** The settings in use now. Null when the graph plugin is off or unreachable. */
 	current(): Record<string, unknown> | null;
 	apply(options: Record<string, unknown>): Promise<void>;
 	/**
-	 * Whether the graph moved away from a stored snapshot.
-	 *
 	 * A workspace with no snapshot yet is not treated as changed, so turning the
 	 * setting on does not make every existing workspace ask at once.
 	 */

@@ -1,5 +1,4 @@
 import type { App } from "obsidian";
-import type { GraphOptionsPort } from "./domain/ports";
 import { clone, isRecord } from "../../shared/domain/util";
 
 const GRAPH_PLUGIN_ID = "graph";
@@ -31,7 +30,7 @@ interface InternalPluginsHost {
  * plugin" rather than throwing, so a future Obsidian release can lose this
  * feature and nothing else.
  */
-export class GraphOptionsAdapter implements GraphOptionsPort {
+export class GraphOptionsAdapter {
 	constructor(private readonly app: App) {}
 
 	current(): Record<string, unknown> | null {
@@ -40,6 +39,8 @@ export class GraphOptionsAdapter implements GraphOptionsPort {
 	}
 
 	/**
+	 * Apply `options` so the next graph view reads them, and persist them.
+	 *
 	 * The clone is load bearing in both directions. Core mutates this object as
 	 * the user drags a slider, which would otherwise edit the stored snapshot.
 	 */

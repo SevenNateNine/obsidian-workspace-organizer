@@ -45,7 +45,7 @@ export interface SliceContext {
 
 	/** Repaint anything derived from the workspace list. */
 	repaint(): void;
-	/** Register a repaint listener. The status bar is the only caller today. */
+	/** The status bar is the only caller today. */
 	onRepaint(fn: () => void): void;
 	/**
 	 * Run before every action, to re-read state that fires no event.
@@ -57,7 +57,6 @@ export interface SliceContext {
 
 	/** Swap the metadata store and rebuild the registry. Storage slice only. */
 	useStore(store: MetaStore): void;
-	/** Add a block to the settings tab. */
 	addSection(section: SettingsSection): void;
 
 	/** Operations other slices can start. Filled in during registration. */

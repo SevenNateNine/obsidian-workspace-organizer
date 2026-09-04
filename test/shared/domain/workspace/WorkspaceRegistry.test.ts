@@ -6,7 +6,6 @@ import { defaultMeta, type WorkspaceMeta } from "@/shared/domain/workspace/meta"
 
 /** Stands in for the workspace engine, holding layouts in memory. */
 class FakeCore implements WorkspacesPort {
-	available = true;
 	/** False stands for the core Workspaces plugin being on. */
 	writable = true;
 	active: string | null = null;
@@ -14,9 +13,6 @@ class FakeCore implements WorkspacesPort {
 	/** What the screen currently shows, which `save` captures. */
 	live: unknown = { main: "live" };
 
-	isAvailable(): boolean {
-		return this.available;
-	}
 	canMutate(): boolean {
 		return this.writable;
 	}
@@ -96,13 +92,6 @@ describe("refresh", () => {
 		const before = store.writes;
 		await registry.refresh();
 		expect(store.writes).toBe(before);
-	});
-
-	// Disabling core must not leave stale names on screen that nothing can load.
-	it("empties the list when the core plugin is off", async () => {
-		core.available = false;
-		await registry.refresh();
-		expect(registry.entries()).toEqual([]);
 	});
 });
 
@@ -268,15 +257,6 @@ describe("with the core Workspaces plugin also running", () => {
 	});
 });
 
-describe("with no engine at all", () => {
-	it("empties the list rather than showing names nothing can load", async () => {
-		core.available = false;
-		await registry.refresh();
-		expect(registry.entries()).toEqual([]);
-		expect(registry.activeName()).toBeNull();
-	});
-});
-
 describe("moveBy", () => {
 	it("reorders the manager list", async () => {
 		await registry.moveBy("Research", -1);
@@ -325,11 +305,5 @@ describe("hasUnsavedChanges", () => {
 
 	it("is true for a workspace with no stored layout", () => {
 		expect(registry.hasUnsavedChanges("Missing")).toBe(true);
-	});
-
-	// A list we cannot read is a list we cannot compare against.
-	it("is true when the core plugin is off", () => {
-		core.available = false;
-		expect(registry.hasUnsavedChanges("Draft")).toBe(true);
 	});
 });

@@ -17,7 +17,6 @@ export interface LayoutSummary {
 	tabs: number;
 	/** Split containers holding more than one child. */
 	splits: number;
-	/** Popout windows. */
 	windows: number;
 	/** De-duplicated, in layout order. Not truncated: see `formatSummary`. */
 	names: string[];

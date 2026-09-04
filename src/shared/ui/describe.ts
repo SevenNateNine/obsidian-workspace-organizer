@@ -1,5 +1,7 @@
+import type { SliceContext } from "../context";
 import { formatSummary, summarizeLayout } from "../domain/workspace/layoutSummary";
 import type { WorkspaceMeta } from "../domain/workspace/meta";
+import type { WorkspaceEntry } from "../domain/workspace/WorkspaceRegistry";
 
 export interface Described {
 	/** The subtext line. */
@@ -24,4 +26,13 @@ export function describeWorkspace(
 	if (!meta.description) return { primary: preview, tooltip: preview };
 
 	return { primary: meta.description, tooltip: `${meta.description}\n${preview}` };
+}
+
+/** The same, for a row that already holds the context. */
+export function describeEntry(ctx: SliceContext, entry: WorkspaceEntry): Described {
+	return describeWorkspace(
+		ctx.registry().layoutOf(entry.name),
+		entry.meta,
+		ctx.settings().previewNameCount,
+	);
 }

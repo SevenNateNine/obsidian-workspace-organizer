@@ -9,15 +9,9 @@
 import type { SliceContext } from "../../shared/context";
 import { StatusBar } from "./ui/StatusBar";
 import { statusBarSection } from "./ui/statusBarSection";
-import { buildMenu, run } from "./run";
 
 export function registerStatusBar(ctx: SliceContext): void {
-	const statusBar = new StatusBar(ctx.plugin.addStatusBarItem(), {
-		settings: () => ctx.settings().statusBar,
-		activeName: () => ctx.registry().activeName(),
-		run: (action) => run(ctx, action),
-		buildMenu: (menu) => buildMenu(ctx, menu),
-	});
+	const statusBar = new StatusBar(ctx.plugin.addStatusBarItem(), ctx);
 
 	ctx.onRepaint(() => statusBar.render());
 	statusBar.render();

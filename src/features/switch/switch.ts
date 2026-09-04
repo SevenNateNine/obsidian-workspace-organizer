@@ -46,8 +46,6 @@ export function createSwitchService(
 	};
 
 	/**
-	 * Switch, asking first what to do with the layout on screen.
-	 *
 	 * The prompt exists because core overwrites a workspace only when told to,
 	 * so any rearranging done since the last save is otherwise dropped in
 	 * silence.

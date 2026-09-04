@@ -1,13 +1,12 @@
 import { Setting } from "obsidian";
 import type { SliceContext } from "../../../shared/context";
 import type { WorkspaceEntry } from "../../../shared/domain/workspace/WorkspaceRegistry";
-import { describeWorkspace } from "../../../shared/ui/describe";
+import { describeEntry } from "../../../shared/ui/describe";
 
 export interface RowPosition {
 	entry: WorkspaceEntry;
 	index: number;
 	total: number;
-	previewNameCount: number;
 }
 
 export function workspaceRow(
@@ -16,13 +15,9 @@ export function workspaceRow(
 	redraw: () => void,
 	position: RowPosition,
 ): void {
-	const { entry, previewNameCount } = position;
+	const { entry } = position;
 	const { name, meta, isActive } = entry;
-	const { primary } = describeWorkspace(
-		ctx.registry().layoutOf(name),
-		meta,
-		previewNameCount,
-	);
+	const { primary } = describeEntry(ctx, entry);
 	const tags = meta.tags.map((tag) => `#${tag}`).join(" ");
 
 	const setting = new Setting(container)
@@ -35,7 +30,6 @@ export function workspaceRow(
 	editButtons(ctx, setting, redraw, entry);
 }
 
-/** Move a workspace up or down the manager list. */
 function orderButtons(
 	ctx: SliceContext,
 	setting: Setting,
@@ -73,7 +67,7 @@ function orderButtons(
 		);
 }
 
-/** Change or remove a workspace. Each button belongs to another slice. */
+/** Each button belongs to another slice. */
 function editButtons(
 	ctx: SliceContext,
 	setting: Setting,

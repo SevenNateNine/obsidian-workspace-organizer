@@ -1,4 +1,5 @@
-import { App, Modal, Setting } from "obsidian";
+import { Modal, Setting } from "obsidian";
+import type { SliceContext } from "../../../shared/context";
 import {
 	formatSummary,
 	summarizeLayout,
@@ -6,34 +7,29 @@ import {
 import { parseTags } from "../../../shared/domain/workspace/tags";
 import type { WorkspaceMeta } from "../../../shared/domain/workspace/meta";
 
-/** Edit the tags and description of one workspace. */
 export class WorkspaceEditModal extends Modal {
 	private tags: string[];
 	private description: string;
 
 	constructor(
-		app: App,
-		private readonly opts: {
-			name: string;
-			meta: WorkspaceMeta;
-			layout: unknown;
-			previewNameCount: number;
-			onSave: (patch: Pick<WorkspaceMeta, "tags" | "description">) => void;
-		},
+		private readonly ctx: SliceContext,
+		private readonly name: string,
+		meta: WorkspaceMeta,
+		private readonly after?: () => void,
 	) {
-		super(app);
-		this.tags = [...opts.meta.tags];
-		this.description = opts.meta.description;
+		super(ctx.app);
+		this.tags = [...meta.tags];
+		this.description = meta.description;
 	}
 
 	override onOpen(): void {
-		this.titleEl.setText(this.opts.name);
+		this.titleEl.setText(this.name);
 
 		// Shown so the user can see what a description would replace, rather than
 		// discovering the trade after saving.
 		const preview = formatSummary(
-			summarizeLayout(this.opts.layout),
-			this.opts.previewNameCount,
+			summarizeLayout(this.ctx.registry().layoutOf(this.name)),
+			this.ctx.settings().previewNameCount,
 		);
 		this.contentEl.createEl("p", { cls: "ew-preview", text: preview });
 
@@ -64,12 +60,22 @@ export class WorkspaceEditModal extends Modal {
 					.setCta()
 					.onClick(() => {
 						this.close();
-						this.opts.onSave({ tags: this.tags, description: this.description });
+						this.save();
 					}),
 			)
 			.addButton((button) =>
 				button.setButtonText("Cancel").onClick(() => this.close()),
 			);
+	}
+
+	private save(): void {
+		void this.ctx.attempt(async () => {
+			await this.ctx.registry().setMeta(this.name, {
+				tags: this.tags,
+				description: this.description,
+			});
+			this.after?.();
+		});
 	}
 
 	override onClose(): void {
