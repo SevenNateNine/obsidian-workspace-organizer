@@ -4,9 +4,9 @@ import type {
 	GraphMode,
 	StatusBarAction,
 	SwitchPrompt,
-} from "../core/domain/vocabulary";
-import type { GraphModeResolution } from "../core/domain/graphOwners";
-import { describe } from "./describe";
+} from "../shared/domain/settings/vocabulary";
+import type { GraphModeResolution } from "../features/graph/domain/graphOwners";
+import { describeWorkspace } from "../shared/ui/describe";
 
 const ACTION_LABELS: Record<StatusBarAction, string> = {
 	none: "Do nothing",
@@ -220,7 +220,7 @@ export class SettingsTab extends PluginSettingTab {
 
 		for (const [index, entry] of entries.entries()) {
 			const { name, meta, isActive } = entry;
-			const { primary } = describe(
+			const { primary } = describeWorkspace(
 				this.plugin.registry.layoutOf(name),
 				meta,
 				previewNameCount,

@@ -11,7 +11,7 @@ import {
 /** A real file written by core, trimmed to two workspaces. */
 const SAMPLE = readFileSync(
 	fileURLToPath(
-		new URL("../../../test/fixtures/workspaces.sample.json", import.meta.url),
+		new URL("../../../../test/fixtures/workspaces.sample.json", import.meta.url),
 	),
 	"utf8",
 );

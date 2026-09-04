@@ -1,5 +1,5 @@
 import { LIVE_ONLY_KEY } from "./workspaceFile";
-import { isRecord, stableText } from "../../shared/domain/util";
+import { isRecord, stableText } from "../util";
 
 /** A stored entry carries this; the live layout does not. */
 const STORED_ONLY_KEY = "mtime";

@@ -16,7 +16,7 @@
  * devices should see no spurious diff because this plugin wrote the file.
  */
 
-import { isRecord } from "../../shared/domain/util";
+import { isRecord } from "../util";
 
 export interface WorkspacesFile {
 	/** Layouts by workspace name. Opaque to us apart from the keys below. */

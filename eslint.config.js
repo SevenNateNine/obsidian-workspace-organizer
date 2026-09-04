@@ -18,15 +18,18 @@ const SIZE_LIMITS = {
 /**
  * The dependency rule, enforced rather than described.
  *
- * `src/core/` is policy and must not name a framework or a concrete adapter.
+ * A `domain/` folder is policy and must not name a framework or a concrete
+ * adapter. The rule reads the same in `shared/` and in every slice, so one
+ * glob covers the whole tree and a new folder cannot drift outside it.
+ *
  * Use the typescript-eslint rule, not the base one, because a type-only import
  * of an Obsidian type is still a leak.
  *
  * `obsidian-typings` matters most here: it describes undocumented internals
- * that can change between Obsidian releases. Keeping it out of core means a
- * broken internal API breaks one adapter, not the whole plugin.
+ * that can change between Obsidian releases. Keeping it out of a domain folder
+ * means a broken internal API breaks one adapter, not the whole plugin.
  */
-const CORE_IMPORT_BOUNDARY = {
+const DOMAIN_IMPORT_BOUNDARY = {
 	"@typescript-eslint/no-restricted-imports": [
 		"error",
 		{
@@ -34,11 +37,11 @@ const CORE_IMPORT_BOUNDARY = {
 				{
 					group: ["obsidian", "obsidian-typings"],
 					message:
-						"core is policy. Declare a port in core/ports.ts and implement it under adapters/.",
+						"This is policy. Declare a port in the nearest ports.ts and implement it outside the domain folder.",
 				},
 				{
-					group: ["**/adapters/**", "**/ui/**"],
-					message: "core must not import a detail. Invert the dependency.",
+					group: ["**/adapters/**", "**/ui/**", "**/obsidian/**"],
+					message: "Policy must not import a detail. Invert the dependency.",
 				},
 			],
 		},
@@ -63,9 +66,9 @@ export default tseslint.config(
 		},
 	},
 	{
-		files: ["src/core/**/*.ts", "src/**/domain/**/*.ts"],
+		files: ["src/**/domain/**/*.ts"],
 		ignores: ["src/**/*.test.ts"],
-		rules: CORE_IMPORT_BOUNDARY,
+		rules: DOMAIN_IMPORT_BOUNDARY,
 	},
 	{
 		// Obsidian settings screens are one long declarative builder chain per

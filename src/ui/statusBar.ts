@@ -1,6 +1,6 @@
 import { Menu } from "obsidian";
-import type { StatusBarSettings } from "../core/domain/PluginSettings";
-import type { StatusBarAction } from "../core/domain/vocabulary";
+import type { StatusBarSettings } from "../shared/domain/settings/PluginSettings";
+import type { StatusBarAction } from "../shared/domain/settings/vocabulary";
 
 export interface StatusBarDeps {
 	settings: () => StatusBarSettings;

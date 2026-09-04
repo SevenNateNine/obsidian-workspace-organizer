@@ -12,7 +12,7 @@ import type {
 	StorageMode,
 	SwitchPrompt,
 } from "./vocabulary";
-import type { WorkspaceMeta } from "./meta";
+import type { WorkspaceMeta } from "../workspace/meta";
 
 /** Bump when a stored shape changes in a way `migrateData` must handle. */
 export const CURRENT_SCHEMA_VERSION = 1;

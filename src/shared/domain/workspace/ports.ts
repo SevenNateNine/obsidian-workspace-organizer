@@ -1,4 +1,4 @@
-import type { WorkspaceMeta } from "./domain/meta";
+import type { WorkspaceMeta } from "./meta";
 
 /**
  * The workspace engine: whatever reads and writes `workspaces.json` and applies

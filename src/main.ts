@@ -1,14 +1,17 @@
 import { Menu, Notice, Plugin } from "obsidian";
-import { WorkspaceRegistry } from "./core/WorkspaceRegistry";
-import { userMessage } from "./core/errors";
-import type { MetaStore } from "./core/ports";
-import { graphOptionsDiffer } from "./core/domain/layoutDiff";
-import { migrateData } from "./core/domain/migrations";
-import { resolveGraphMode, type GraphModeResolution } from "./core/domain/graphOwners";
-import type { PersistedData } from "./core/domain/PluginSettings";
-import type { StatusBarAction, StorageMode } from "./core/domain/vocabulary";
-import { enabledCommunityPluginIds } from "./adapters/obsidian/pluginState";
-import { DirectWorkspacesAdapter } from "./adapters/obsidian/DirectWorkspacesAdapter";
+import { WorkspaceRegistry } from "./shared/domain/workspace/WorkspaceRegistry";
+import { userMessage } from "./shared/domain/errors";
+import type { MetaStore } from "./shared/domain/workspace/ports";
+import { graphOptionsDiffer } from "./shared/domain/workspace/layoutDiff";
+import { migrateData } from "./shared/domain/settings/migrations";
+import {
+	resolveGraphMode,
+	type GraphModeResolution,
+} from "./features/graph/domain/graphOwners";
+import type { PersistedData } from "./shared/domain/settings/PluginSettings";
+import type { StatusBarAction, StorageMode } from "./shared/domain/settings/vocabulary";
+import { enabledCommunityPluginIds } from "./shared/obsidian/pluginState";
+import { DirectWorkspacesAdapter } from "./shared/obsidian/DirectWorkspacesAdapter";
 import { GraphOptionsAdapter } from "./adapters/obsidian/GraphOptionsAdapter";
 import { EmbeddedStore } from "./adapters/obsidian/EmbeddedStore";
 import { SidecarStore, type DataOwner } from "./adapters/obsidian/SidecarStore";
@@ -16,7 +19,7 @@ import { SwitcherModal } from "./ui/SwitcherModal";
 import { WorkspaceEditModal } from "./ui/WorkspaceEditModal";
 import { SettingsTab } from "./ui/SettingsTab";
 import { StatusBar } from "./ui/statusBar";
-import { ConfirmModal, PromptModal, SaveOnSwitchModal } from "./ui/prompts";
+import { ConfirmModal, PromptModal, SaveOnSwitchModal } from "./shared/ui/prompts";
 
 /**
  * Composition root and Obsidian adapter.

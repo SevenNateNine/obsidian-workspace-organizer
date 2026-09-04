@@ -4,7 +4,7 @@ import {
 	type PersistedData,
 	type PluginSettings,
 } from "./PluginSettings";
-import { defaultMeta, type WorkspaceMeta } from "./meta";
+import { defaultMeta, type WorkspaceMeta } from "../workspace/meta";
 import {
 	GRAPH_MODES,
 	STATUS_BAR_ACTIONS,
@@ -15,8 +15,8 @@ import {
 	type StorageMode,
 	type SwitchPrompt,
 } from "./vocabulary";
-import { dedupe, normalizeTag } from "./tags";
-import { isRecord } from "../../shared/domain/util";
+import { dedupe, normalizeTag } from "../workspace/tags";
+import { isRecord } from "../util";
 
 /**
  * Bring persisted data up to the current schema.

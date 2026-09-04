@@ -12,7 +12,7 @@
  * convenience, and the explicit modes are the answer for anything it misses.
  */
 
-import type { GraphMode } from "./vocabulary";
+import type { GraphMode } from "../../../shared/domain/settings/vocabulary";
 
 /**
  * Community plugins that own graph settings themselves, by plugin id.

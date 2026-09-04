@@ -1,5 +1,5 @@
-import { formatSummary, summarizeLayout } from "../core/domain/layoutSummary";
-import type { WorkspaceMeta } from "../core/domain/meta";
+import { formatSummary, summarizeLayout } from "../domain/workspace/layoutSummary";
+import type { WorkspaceMeta } from "../domain/workspace/meta";
 
 export interface Described {
 	/** The subtext line. */
@@ -15,7 +15,7 @@ export interface Described {
  * purpose. The generated preview is never lost though: it moves to the tooltip,
  * where it stays available without costing a second row of height.
  */
-export function describe(
+export function describeWorkspace(
 	layout: unknown,
 	meta: WorkspaceMeta,
 	maxNames: number,

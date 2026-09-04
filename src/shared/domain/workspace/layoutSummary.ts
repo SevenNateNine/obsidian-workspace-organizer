@@ -10,7 +10,7 @@
  * its children, and a malformed tree summarizes as empty rather than throwing.
  */
 
-import { isRecord } from "../../shared/domain/util";
+import { isRecord } from "../util";
 
 export interface LayoutSummary {
 	/** Editor tabs. Sidebar panels are not counted. */

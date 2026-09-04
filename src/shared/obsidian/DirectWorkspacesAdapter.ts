@@ -1,14 +1,14 @@
 import { normalizePath, type App } from "obsidian";
-import type { WorkspacesPort, EmbeddedMetaPort } from "../../core/ports";
-import { WorkspaceError } from "../../core/errors";
-import { clone, isRecord } from "../../shared/domain/util";
+import type { WorkspacesPort, EmbeddedMetaPort } from "../domain/workspace/ports";
+import { WorkspaceError } from "../domain/errors";
+import { clone, isRecord } from "../domain/util";
 import {
 	EMPTY_FILE,
 	entryFromLayout,
 	parseWorkspacesFile,
 	serializeWorkspacesFile,
 	type WorkspacesFile,
-} from "../../core/domain/workspaceFile";
+} from "../domain/workspace/workspaceFile";
 import { isCoreWorkspacesEnabled } from "./pluginState";
 
 /** The key this plugin adds to an entry in embedded storage mode. */

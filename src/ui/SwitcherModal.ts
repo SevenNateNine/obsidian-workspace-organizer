@@ -1,8 +1,11 @@
 import { App, FuzzySuggestModal, type FuzzyMatch } from "obsidian";
-import type { WorkspaceEntry, WorkspaceRegistry } from "../core/WorkspaceRegistry";
-import type { PluginSettings } from "../core/domain/PluginSettings";
-import { countTags, parseQuery } from "../core/domain/tags";
-import { describe } from "./describe";
+import type {
+	WorkspaceEntry,
+	WorkspaceRegistry,
+} from "../shared/domain/workspace/WorkspaceRegistry";
+import type { PluginSettings } from "../shared/domain/settings/PluginSettings";
+import { countTags, parseQuery } from "../shared/domain/workspace/tags";
+import { describeWorkspace } from "../shared/ui/describe";
 
 export interface SwitcherDeps {
 	registry: WorkspaceRegistry;
@@ -70,7 +73,7 @@ export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 
 	override renderSuggestion(match: FuzzyMatch<WorkspaceEntry>, el: HTMLElement): void {
 		const { name, meta, isActive } = match.item;
-		const { primary, tooltip } = describe(
+		const { primary, tooltip } = describeWorkspace(
 			this.deps.registry.layoutOf(name),
 			meta,
 			this.deps.settings.previewNameCount,

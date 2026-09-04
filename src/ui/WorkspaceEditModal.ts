@@ -1,7 +1,10 @@
 import { App, Modal, Setting } from "obsidian";
-import { formatSummary, summarizeLayout } from "../core/domain/layoutSummary";
-import { parseTags } from "../core/domain/tags";
-import type { WorkspaceMeta } from "../core/domain/meta";
+import {
+	formatSummary,
+	summarizeLayout,
+} from "../shared/domain/workspace/layoutSummary";
+import { parseTags } from "../shared/domain/workspace/tags";
+import type { WorkspaceMeta } from "../shared/domain/workspace/meta";
 
 /** Edit the tags and description of one workspace. */
 export class WorkspaceEditModal extends Modal {
