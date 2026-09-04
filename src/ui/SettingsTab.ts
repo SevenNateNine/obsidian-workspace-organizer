@@ -1,7 +1,11 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type WorkspaceOrganizerPlugin from "../main";
-import type { StatusBarAction, SwitchPrompt } from "../core/domain/types";
-import type { GraphMode, GraphModeResolution } from "../core/domain/graphOwners";
+import type {
+	GraphMode,
+	StatusBarAction,
+	SwitchPrompt,
+} from "../core/domain/vocabulary";
+import type { GraphModeResolution } from "../core/domain/graphOwners";
 import { describe } from "./describe";
 
 const ACTION_LABELS: Record<StatusBarAction, string> = {

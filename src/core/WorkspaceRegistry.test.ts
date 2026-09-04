@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { WorkspaceRegistry } from "./WorkspaceRegistry";
 import { WorkspaceError } from "./errors";
 import type { MetaStore, WorkspacesPort } from "./ports";
-import { defaultMeta, type WorkspaceMeta } from "./domain/types";
+import { defaultMeta, type WorkspaceMeta } from "./domain/meta";
 
 /** Stands in for the workspace engine, holding layouts in memory. */
 class FakeCore implements WorkspacesPort {

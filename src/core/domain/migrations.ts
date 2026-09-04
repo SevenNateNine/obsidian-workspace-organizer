@@ -1,18 +1,20 @@
 import {
 	CURRENT_SCHEMA_VERSION,
 	DEFAULT_SETTINGS,
+	type PersistedData,
+	type PluginSettings,
+} from "./PluginSettings";
+import { defaultMeta, type WorkspaceMeta } from "./meta";
+import {
+	GRAPH_MODES,
 	STATUS_BAR_ACTIONS,
 	STORAGE_MODES,
 	SWITCH_PROMPTS,
-	defaultMeta,
-	type PersistedData,
-	type PluginSettings,
+	type GraphMode,
 	type StatusBarAction,
 	type StorageMode,
 	type SwitchPrompt,
-	type WorkspaceMeta,
-} from "./types";
-import { GRAPH_MODES, type GraphMode } from "./graphOwners";
+} from "./vocabulary";
 import { dedupe, normalizeTag } from "./tags";
 import { isRecord } from "../../shared/domain/util";
 

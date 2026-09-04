@@ -3,7 +3,7 @@ import type { MetaStore, WorkspacesPort } from "./ports";
 import { layoutsDiffer } from "./domain/layoutDiff";
 import { move, reconcile, renameKey, sortedNames } from "./domain/reconcile";
 import { hasAllTags } from "./domain/tags";
-import { defaultMeta, type WorkspaceMeta } from "./domain/types";
+import { defaultMeta, type WorkspaceMeta } from "./domain/meta";
 
 export interface WorkspaceEntry {
 	name: string;

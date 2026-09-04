@@ -12,10 +12,7 @@
  * convenience, and the explicit modes are the answer for anything it misses.
  */
 
-/** When to save and restore graph settings with a workspace. */
-export type GraphMode = "auto" | "always" | "never";
-
-export const GRAPH_MODES: GraphMode[] = ["auto", "always", "never"];
+import type { GraphMode } from "./vocabulary";
 
 /**
  * Community plugins that own graph settings themselves, by plugin id.

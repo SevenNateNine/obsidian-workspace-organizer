@@ -1,6 +1,6 @@
 import { App, FuzzySuggestModal, type FuzzyMatch } from "obsidian";
 import type { WorkspaceEntry, WorkspaceRegistry } from "../core/WorkspaceRegistry";
-import type { PluginSettings } from "../core/domain/types";
+import type { PluginSettings } from "../core/domain/PluginSettings";
 import { countTags, parseQuery } from "../core/domain/tags";
 import { describe } from "./describe";
 

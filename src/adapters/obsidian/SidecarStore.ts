@@ -1,5 +1,6 @@
 import type { MetaStore } from "../../core/ports";
-import type { PersistedData, WorkspaceMeta } from "../../core/domain/types";
+import type { PersistedData } from "../../core/domain/PluginSettings";
+import type { WorkspaceMeta } from "../../core/domain/meta";
 
 /**
  * Keeps workspace metadata in this plugin's own `data.json`.
