@@ -1,5 +1,5 @@
 import type { App } from "obsidian";
-import type { GraphOptionsPort } from "../../shared/domain/workspace/ports";
+import type { GraphOptionsPort } from "./domain/ports";
 import { clone, isRecord } from "../../shared/domain/util";
 
 const GRAPH_PLUGIN_ID = "graph";

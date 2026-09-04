@@ -1,25 +1,26 @@
 import { Menu, Notice, Plugin } from "obsidian";
 import type { WorkspaceRegistry } from "./shared/domain/workspace/WorkspaceRegistry";
 import type { MetaStore } from "./shared/domain/workspace/ports";
-import { graphOptionsDiffer } from "./shared/domain/workspace/layoutDiff";
 import { migrateData } from "./shared/domain/settings/migrations";
-import {
-	resolveGraphMode,
-	type GraphModeResolution,
-} from "./features/graph/domain/graphOwners";
 import type { PersistedData } from "./shared/domain/settings/PluginSettings";
 import type { StatusBarAction, StorageMode } from "./shared/domain/settings/vocabulary";
 import { createRuntime, type PluginRuntime } from "./shared/runtime";
 import type { SliceContext } from "./shared/context";
-import { enabledCommunityPluginIds } from "./shared/obsidian/pluginState";
-import { GraphOptionsAdapter } from "./adapters/obsidian/GraphOptionsAdapter";
+import { registerGraph, type GraphService } from "./features/graph";
 import { EmbeddedStore } from "./adapters/obsidian/EmbeddedStore";
 import { SidecarStore } from "./adapters/obsidian/SidecarStore";
 import { SwitcherModal } from "./ui/SwitcherModal";
 import { WorkspaceEditModal } from "./ui/WorkspaceEditModal";
-import { SettingsTab } from "./ui/SettingsTab";
+import { SettingsTab } from "./shared/ui/SettingsTab";
 import { StatusBar } from "./ui/statusBar";
 import { ConfirmModal, PromptModal, SaveOnSwitchModal } from "./shared/ui/prompts";
+import {
+	managerSection,
+	statusBarSection,
+	storageSection,
+	switcherSection,
+	switchingSection,
+} from "./ui/settingsSections";
 
 /**
  * Composition root and Obsidian adapter.
@@ -32,19 +33,10 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 	private runtime!: PluginRuntime;
 	private ctx!: SliceContext;
 
-	private graph!: GraphOptionsAdapter;
+	private graph!: GraphService;
 	private statusBar: StatusBar | null = null;
-	/**
-	 * The `graphSettings` mode resolved against the plugins enabled right now.
-	 *
-	 * Cached because `needsPrompt` is synchronous. Refreshed through
-	 * `onBeforeAction`, which is often enough that a plugin toggled mid-session
-	 * is picked up without an event to listen for. Starts inactive so nothing is
-	 * written before the first read.
-	 */
-	private graphMode: GraphModeResolution = { active: false, blockedBy: null };
 
-	/** Read by the settings tab and the switcher until both become slices. */
+	/** Read by the settings sections and the switcher until both become slices. */
 	get data(): PersistedData {
 		return this.ctx.data();
 	}
@@ -57,9 +49,9 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 		this.runtime = createRuntime(this, migrateData(await this.loadData()));
 		this.ctx = this.runtime.context;
 
-		this.graph = new GraphOptionsAdapter(this.app);
 		this.ctx.useStore(this.store());
-		this.ctx.onBeforeAction(() => this.refreshGraphMode());
+		this.graph = registerGraph(this.ctx);
+		this.registerRemainingSections();
 
 		// Wait for the layout before touching it. `getLayout` on a half-built
 		// workspace would capture panes that are not there yet.
@@ -67,7 +59,7 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 
 		this.registerCommands();
 		this.createStatusBar();
-		this.addSettingTab(new SettingsTab(this.app, this));
+		this.addSettingTab(new SettingsTab(this.app, this, this.runtime));
 
 		this.registerEvent(
 			this.app.workspace.on("layout-change", () => this.ctx.repaint()),
@@ -78,24 +70,28 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 		await this.ctx.reload();
 	}
 
-	/**
-	 * Work out whether this plugin owns the graph settings at the moment.
-	 *
-	 * Obsidian fires no documented event when another plugin is turned on or
-	 * off, so the enabled list is read again rather than watched. The file is
-	 * small and this runs only on a reload or an action, not on every keystroke.
-	 */
-	async refreshGraphMode(): Promise<void> {
-		const enabled = await enabledCommunityPluginIds(
-			this.app.vault.adapter,
-			this.app.vault.configDir,
-		);
-		this.graphMode = resolveGraphMode(this.data.settings.graphSettings, enabled);
-	}
-
-	/** What the settings tab reports, so the user can see what auto decided. */
-	graphResolution(): GraphModeResolution {
-		return this.graphMode;
+	/** Registered here until each block moves into its own slice. */
+	private registerRemainingSections(): void {
+		this.ctx.addSection({
+			order: 10,
+			render: (el) => switchingSection(this, el),
+		});
+		this.ctx.addSection({
+			order: 30,
+			render: (el) => switcherSection(this, el),
+		});
+		this.ctx.addSection({
+			order: 40,
+			render: (el, redraw) => statusBarSection(this, el, redraw),
+		});
+		this.ctx.addSection({
+			order: 50,
+			render: (el, redraw) => storageSection(this, el, redraw),
+		});
+		this.ctx.addSection({
+			order: 60,
+			render: (el, redraw) => managerSection(this, el, redraw),
+		});
 	}
 
 	private store(mode: StorageMode = this.data.settings.storage): MetaStore {
@@ -243,17 +239,10 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 		if (mode === "never") return false;
 		if (mode === "always") return true;
 		if (this.registry.hasUnsavedChanges(current)) return true;
-		return this.graphMode.active && this.graphChanged(current);
-	}
-
-	/**
-	 * A workspace with no snapshot yet is not treated as changed, so turning the
-	 * setting on does not make every existing workspace ask at once.
-	 */
-	private graphChanged(current: string): boolean {
-		const saved = this.registry.metaOf(current)?.graph;
-		if (!saved) return false;
-		return graphOptionsDiffer(this.graph.current(), saved);
+		return (
+			this.graph.isActive() &&
+			this.graph.hasChanged(this.registry.metaOf(current)?.graph)
+		);
 	}
 
 	private switchNow(name: string): void {
@@ -268,7 +257,7 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 	 */
 	private async saveWorkspace(name: string): Promise<void> {
 		await this.registry.save(name);
-		if (!this.graphMode.active) return;
+		if (!this.graph.isActive()) return;
 
 		const options = this.graph.current();
 		if (options) await this.registry.setMeta(name, { graph: options });
@@ -285,7 +274,7 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 		// `canMutate` because the switch below refuses while the core Workspaces
 		// plugin is on. Without the check, a refused switch would still leave the
 		// graph changed.
-		if (this.graphMode.active && this.registry.canMutate()) {
+		if (this.graph.isActive() && this.registry.canMutate()) {
 			const saved = this.registry.metaOf(name)?.graph;
 			if (saved) await this.graph.apply(saved);
 		}
