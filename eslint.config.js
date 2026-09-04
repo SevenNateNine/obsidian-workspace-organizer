@@ -63,8 +63,8 @@ export default tseslint.config(
 		},
 	},
 	{
-		files: ["src/core/**/*.ts"],
-		ignores: ["src/core/**/*.test.ts"],
+		files: ["src/core/**/*.ts", "src/**/domain/**/*.ts"],
+		ignores: ["src/**/*.test.ts"],
 		rules: CORE_IMPORT_BOUNDARY,
 	},
 	{

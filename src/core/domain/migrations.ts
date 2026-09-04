@@ -14,6 +14,7 @@ import {
 } from "./types";
 import { GRAPH_MODES, type GraphMode } from "./graphOwners";
 import { dedupe, normalizeTag } from "./tags";
+import { isRecord } from "../../shared/domain/util";
 
 /**
  * Bring persisted data up to the current schema.
@@ -157,8 +158,4 @@ function bool(value: unknown, fallback: boolean): boolean {
 function clamp(value: unknown, min: number, max: number, fallback: number): number {
 	if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
 	return Math.min(max, Math.max(min, Math.round(value)));
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

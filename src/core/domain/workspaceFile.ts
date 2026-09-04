@@ -16,6 +16,8 @@
  * devices should see no spurious diff because this plugin wrote the file.
  */
 
+import { isRecord } from "../../shared/domain/util";
+
 export interface WorkspacesFile {
 	/** Layouts by workspace name. Opaque to us apart from the keys below. */
 	workspaces: Record<string, unknown>;
@@ -107,8 +109,4 @@ export function formatMtime(now: Date): string {
 
 function pad(value: number): string {
 	return String(value).padStart(2, "0");
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -1,6 +1,7 @@
 import { normalizePath, type App } from "obsidian";
 import type { WorkspacesPort, EmbeddedMetaPort } from "../../core/ports";
 import { WorkspaceError } from "../../core/errors";
+import { clone, isRecord } from "../../shared/domain/util";
 import {
 	EMPTY_FILE,
 	entryFromLayout,
@@ -178,12 +179,4 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 		if (this.coreEnabled) throw new WorkspaceError("core-conflict");
 		await this.app.vault.adapter.write(this.path, serializeWorkspacesFile(this.file));
 	}
-}
-
-function clone<T>(value: T): T {
-	return JSON.parse(JSON.stringify(value)) as T;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -1,4 +1,5 @@
 import { LIVE_ONLY_KEY } from "./workspaceFile";
+import { isRecord, stableText } from "../../shared/domain/util";
 
 /** A stored entry carries this; the live layout does not. */
 const STORED_ONLY_KEY = "mtime";
@@ -65,27 +66,4 @@ function steady(options: Record<string, unknown>): Record<string, unknown> {
 function comparable(entry: Record<string, unknown>): Record<string, unknown> {
 	const { [LIVE_ONLY_KEY]: _live, [STORED_ONLY_KEY]: _stored, ...rest } = entry;
 	return rest;
-}
-
-/**
- * Serialize with object keys in sorted order.
- *
- * A live layout and one read back from JSON can hold the same keys in a
- * different order, which plain `JSON.stringify` reports as a difference.
- */
-function stableText(value: unknown): string {
-	return JSON.stringify(sortKeys(value));
-}
-
-function sortKeys(value: unknown): unknown {
-	if (Array.isArray(value)) return value.map(sortKeys);
-	if (!isRecord(value)) return value;
-
-	const out: Record<string, unknown> = {};
-	for (const key of Object.keys(value).sort()) out[key] = sortKeys(value[key]);
-	return out;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

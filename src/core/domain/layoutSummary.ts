@@ -10,6 +10,8 @@
  * its children, and a malformed tree summarizes as empty rather than throwing.
  */
 
+import { isRecord } from "../../shared/domain/util";
+
 export interface LayoutSummary {
 	/** Editor tabs. Sidebar panels are not counted. */
 	tabs: number;
@@ -142,8 +144,4 @@ export function formatSummary(summary: LayoutSummary, maxNames = 3): string {
 
 function plural(count: number, noun: string): string {
 	return `${count} ${noun}${count === 1 ? "" : "s"}`;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

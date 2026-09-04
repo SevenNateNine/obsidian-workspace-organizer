@@ -1,5 +1,6 @@
 import type { App } from "obsidian";
 import type { GraphOptionsPort } from "../../core/ports";
+import { clone, isRecord } from "../../shared/domain/util";
 
 const GRAPH_PLUGIN_ID = "graph";
 
@@ -59,12 +60,4 @@ export class GraphOptionsAdapter implements GraphOptionsPort {
 			return null;
 		}
 	}
-}
-
-function clone(value: Record<string, unknown>): Record<string, unknown> {
-	return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
