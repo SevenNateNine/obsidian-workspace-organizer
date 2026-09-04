@@ -1,6 +1,5 @@
 import { Menu, Notice, Plugin } from "obsidian";
-import { WorkspaceRegistry } from "./shared/domain/workspace/WorkspaceRegistry";
-import { userMessage } from "./shared/domain/errors";
+import type { WorkspaceRegistry } from "./shared/domain/workspace/WorkspaceRegistry";
 import type { MetaStore } from "./shared/domain/workspace/ports";
 import { graphOptionsDiffer } from "./shared/domain/workspace/layoutDiff";
 import { migrateData } from "./shared/domain/settings/migrations";
@@ -10,11 +9,12 @@ import {
 } from "./features/graph/domain/graphOwners";
 import type { PersistedData } from "./shared/domain/settings/PluginSettings";
 import type { StatusBarAction, StorageMode } from "./shared/domain/settings/vocabulary";
+import { createRuntime, type PluginRuntime } from "./shared/runtime";
+import type { SliceContext } from "./shared/context";
 import { enabledCommunityPluginIds } from "./shared/obsidian/pluginState";
-import { DirectWorkspacesAdapter } from "./shared/obsidian/DirectWorkspacesAdapter";
 import { GraphOptionsAdapter } from "./adapters/obsidian/GraphOptionsAdapter";
 import { EmbeddedStore } from "./adapters/obsidian/EmbeddedStore";
-import { SidecarStore, type DataOwner } from "./adapters/obsidian/SidecarStore";
+import { SidecarStore } from "./adapters/obsidian/SidecarStore";
 import { SwitcherModal } from "./ui/SwitcherModal";
 import { WorkspaceEditModal } from "./ui/WorkspaceEditModal";
 import { SettingsTab } from "./ui/SettingsTab";
@@ -24,67 +24,58 @@ import { ConfirmModal, PromptModal, SaveOnSwitchModal } from "./shared/ui/prompt
 /**
  * Composition root and Obsidian adapter.
  *
- * Builds the detail implementations, registers the commands, and turns a
- * failure into a Notice. Every decision lives in `core/`.
+ * Builds the runtime, then registers what is not yet carved into a slice. The
+ * plumbing lives in `shared/runtime.ts` and every decision lives in a domain
+ * folder, so what is left here is the feature work still waiting for a home.
  */
 export default class WorkspaceOrganizerPlugin extends Plugin {
-	data!: PersistedData;
-	registry!: WorkspaceRegistry;
+	private runtime!: PluginRuntime;
+	private ctx!: SliceContext;
 
-	private core!: DirectWorkspacesAdapter;
 	private graph!: GraphOptionsAdapter;
 	private statusBar: StatusBar | null = null;
-	/** Set once the reload notice has been shown, so it appears only once. */
-	private warnedAboutCore = false;
 	/**
 	 * The `graphSettings` mode resolved against the plugins enabled right now.
 	 *
-	 * Cached because `needsPrompt` is synchronous. Refreshed by `refreshGraphMode`
-	 * on every reload and before every action, which is often enough that a
-	 * plugin toggled mid-session is picked up without an event to listen for.
-	 * Starts inactive so nothing is written before the first read.
+	 * Cached because `needsPrompt` is synchronous. Refreshed through
+	 * `onBeforeAction`, which is often enough that a plugin toggled mid-session
+	 * is picked up without an event to listen for. Starts inactive so nothing is
+	 * written before the first read.
 	 */
 	private graphMode: GraphModeResolution = { active: false, blockedBy: null };
 
-	private readonly owner: DataOwner = {
-		current: () => this.data,
-		replace: async (data) => {
-			this.data = data;
-			await this.saveData(data);
-		},
-	};
+	/** Read by the settings tab and the switcher until both become slices. */
+	get data(): PersistedData {
+		return this.ctx.data();
+	}
+
+	get registry(): WorkspaceRegistry {
+		return this.ctx.registry();
+	}
 
 	override async onload(): Promise<void> {
-		this.data = migrateData(await this.loadData());
-		this.core = new DirectWorkspacesAdapter(this.app);
+		this.runtime = createRuntime(this, migrateData(await this.loadData()));
+		this.ctx = this.runtime.context;
+
 		this.graph = new GraphOptionsAdapter(this.app);
-		this.registry = new WorkspaceRegistry(this.core, this.store());
+		this.ctx.useStore(this.store());
+		this.ctx.onBeforeAction(() => this.refreshGraphMode());
 
 		// Wait for the layout before touching it. `getLayout` on a half-built
 		// workspace would capture panes that are not there yet.
-		this.app.workspace.onLayoutReady(() => void this.reload());
+		this.app.workspace.onLayoutReady(() => void this.ctx.reload());
 
 		this.registerCommands();
 		this.createStatusBar();
 		this.addSettingTab(new SettingsTab(this.app, this));
 
 		this.registerEvent(
-			this.app.workspace.on("layout-change", () => this.statusBar?.render()),
+			this.app.workspace.on("layout-change", () => this.ctx.repaint()),
 		);
 	}
 
-	/**
-	 * Re-read the file and the core plugin state, then rebuild the metadata.
-	 *
-	 * Runs before anything that shows a list, because the vault can be synced
-	 * from another device or edited by hand while the plugin is running.
-	 */
 	async reload(): Promise<void> {
-		await this.core.reload();
-		await this.registry.refresh();
-		await this.refreshGraphMode();
-		this.warnIfCoreEnabled();
-		this.statusBar?.render();
+		await this.ctx.reload();
 	}
 
 	/**
@@ -107,32 +98,13 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 		return this.graphMode;
 	}
 
-	/**
-	 * Say why nothing can be saved, once.
-	 *
-	 * Both plugins write `workspaces.json`, and core caches it in memory, so
-	 * with both running one of them overwrites the other's workspaces without a
-	 * message. A reload is needed because core reads the file when it loads.
-	 */
-	private warnIfCoreEnabled(): void {
-		if (!this.core.isBlockedByCore()) {
-			this.warnedAboutCore = false;
-			return;
-		}
-		if (this.warnedAboutCore) return;
-
-		this.warnedAboutCore = true;
-		new Notice(
-			"Workspace Organizer is read-only while the core Workspaces plugin is on. " +
-				"Turn it off in Settings, Core plugins, then reload Obsidian.",
-			10000,
-		);
-	}
-
 	private store(mode: StorageMode = this.data.settings.storage): MetaStore {
-		return mode === "embedded"
-			? new EmbeddedStore(this.core)
-			: new SidecarStore(this.owner);
+		if (mode === "embedded") return new EmbeddedStore(this.ctx.embeddedMeta());
+
+		return new SidecarStore({
+			current: () => this.ctx.data(),
+			replace: (data) => this.ctx.replaceData(data),
+		});
 	}
 
 	private registerCommands(): void {
@@ -174,12 +146,12 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 			run: (action) => this.run(action),
 			buildMenu: (menu) => this.buildMenu(menu),
 		});
+		this.ctx.onRepaint(() => this.statusBar?.render());
 		this.statusBar.render();
 	}
 
 	async persist(): Promise<void> {
-		await this.saveData(this.data);
-		this.statusBar?.render();
+		await this.ctx.persist();
 	}
 
 	/**
@@ -199,7 +171,7 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 		this.data.settings.storage = mode;
 		await this.persist();
 
-		this.registry = new WorkspaceRegistry(this.core, this.store());
+		this.ctx.useStore(this.store());
 		await this.reload();
 	}
 
@@ -461,21 +433,8 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 		new Notice("No workspace is active yet. Save the current layout first.");
 	}
 
-	/**
-	 * Run an action, reporting any failure once, in the user's language.
-	 *
-	 * Every action goes through here, which is what keeps `graphMode` current
-	 * without an event to subscribe to. A failed read leaves the last answer in
-	 * place rather than stopping the action.
-	 */
+	/** Kept while the actions still live here. The work is in the runtime. */
 	async attempt(fn: () => Promise<void>): Promise<void> {
-		try {
-			await this.refreshGraphMode();
-			await fn();
-		} catch (err) {
-			new Notice(userMessage(err));
-			console.error("[workspace-organizer] action failed", err);
-		}
-		this.statusBar?.render();
+		await this.ctx.attempt(fn);
 	}
 }
