@@ -1,14 +1,13 @@
 import { Menu, Notice, Plugin } from "obsidian";
 import type { WorkspaceRegistry } from "./shared/domain/workspace/WorkspaceRegistry";
-import type { MetaStore } from "./shared/domain/workspace/ports";
+
 import { migrateData } from "./shared/domain/settings/migrations";
 import type { PersistedData } from "./shared/domain/settings/PluginSettings";
-import type { StatusBarAction, StorageMode } from "./shared/domain/settings/vocabulary";
+import type { StatusBarAction } from "./shared/domain/settings/vocabulary";
 import { createRuntime, type PluginRuntime } from "./shared/runtime";
 import type { SliceContext } from "./shared/context";
 import { registerGraph, type GraphService } from "./features/graph";
-import { EmbeddedStore } from "./adapters/obsidian/EmbeddedStore";
-import { SidecarStore } from "./adapters/obsidian/SidecarStore";
+import { registerStorage } from "./features/storage";
 import { SwitcherModal } from "./ui/SwitcherModal";
 import { WorkspaceEditModal } from "./ui/WorkspaceEditModal";
 import { SettingsTab } from "./shared/ui/SettingsTab";
@@ -17,7 +16,6 @@ import { ConfirmModal, PromptModal, SaveOnSwitchModal } from "./shared/ui/prompt
 import {
 	managerSection,
 	statusBarSection,
-	storageSection,
 	switcherSection,
 	switchingSection,
 } from "./ui/settingsSections";
@@ -49,7 +47,8 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 		this.runtime = createRuntime(this, migrateData(await this.loadData()));
 		this.ctx = this.runtime.context;
 
-		this.ctx.useStore(this.store());
+		// First: installing the metadata store is what builds the registry.
+		registerStorage(this.ctx);
 		this.graph = registerGraph(this.ctx);
 		this.registerRemainingSections();
 
@@ -85,21 +84,8 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 			render: (el, redraw) => statusBarSection(this, el, redraw),
 		});
 		this.ctx.addSection({
-			order: 50,
-			render: (el, redraw) => storageSection(this, el, redraw),
-		});
-		this.ctx.addSection({
 			order: 60,
 			render: (el, redraw) => managerSection(this, el, redraw),
-		});
-	}
-
-	private store(mode: StorageMode = this.data.settings.storage): MetaStore {
-		if (mode === "embedded") return new EmbeddedStore(this.ctx.embeddedMeta());
-
-		return new SidecarStore({
-			current: () => this.ctx.data(),
-			replace: (data) => this.ctx.replaceData(data),
 		});
 	}
 
@@ -148,27 +134,6 @@ export default class WorkspaceOrganizerPlugin extends Plugin {
 
 	async persist(): Promise<void> {
 		await this.ctx.persist();
-	}
-
-	/**
-	 * Move metadata to the other storage location, then forget the old one.
-	 *
-	 * Done in that order so a failure part way through leaves the metadata
-	 * readable in at least one place.
-	 */
-	async setStorage(mode: StorageMode): Promise<void> {
-		if (mode === this.data.settings.storage) return;
-
-		const from = this.store();
-		const to = this.store(mode);
-		await to.write(await from.read());
-		await from.write({});
-
-		this.data.settings.storage = mode;
-		await this.persist();
-
-		this.ctx.useStore(this.store());
-		await this.reload();
 	}
 
 	// --- actions ---------------------------------------------------------

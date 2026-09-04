@@ -122,30 +122,6 @@ export function statusBarSection(
 	}
 }
 
-export function storageSection(
-	plugin: WorkspaceOrganizerPlugin,
-	container: HTMLElement,
-	redraw: () => void,
-): void {
-	new Setting(container).setName("Storage").setHeading();
-
-	new Setting(container)
-		.setName("Where tags and descriptions are kept")
-		.setDesc(
-			"Sidecar keeps workspaces.json exactly as vanilla Obsidian writes it, so turning the core Workspaces plugin back on stays safe. Embedded stores the metadata inside workspaces.json so it travels with the vault. Switching moves the existing metadata across.",
-		)
-		.addDropdown((dropdown) =>
-			dropdown
-				.addOption("sidecar", "Sidecar file (recommended)")
-				.addOption("embedded", "Inside workspaces.json (experimental)")
-				.setValue(plugin.data.settings.storage)
-				.onChange(async (value) => {
-					await plugin.setStorage(value === "embedded" ? "embedded" : "sidecar");
-					redraw();
-				}),
-		);
-}
-
 export function managerSection(
 	plugin: WorkspaceOrganizerPlugin,
 	container: HTMLElement,
