@@ -2,10 +2,10 @@ import { App, FuzzySuggestModal, type FuzzyMatch } from "obsidian";
 import type {
 	WorkspaceEntry,
 	WorkspaceRegistry,
-} from "../shared/domain/workspace/WorkspaceRegistry";
-import type { PluginSettings } from "../shared/domain/settings/PluginSettings";
-import { countTags, parseQuery } from "../shared/domain/workspace/tags";
-import { describeWorkspace } from "../shared/ui/describe";
+} from "../../../shared/domain/workspace/WorkspaceRegistry";
+import type { PluginSettings } from "../../../shared/domain/settings/PluginSettings";
+import { countTags, parseQuery } from "../domain/query";
+import { describeWorkspace } from "../../../shared/ui/describe";
 
 export interface SwitcherDeps {
 	registry: WorkspaceRegistry;
