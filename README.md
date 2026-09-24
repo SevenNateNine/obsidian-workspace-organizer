@@ -83,6 +83,11 @@ npm run build   # type check, then a minified main.js
 The plugin is inside the vault at `.obsidian/plugins/obsidian-workspace-organizer`. Run
 `npm run dev`, then reload Obsidian to load each build.
 
+To use the plugin in another vault, run `npm run deploy -- "<vault folder>"`. This builds, then
+copies `main.js`, `manifest.json`, and `styles.css` to `.obsidian/plugins/workspace-organizer` in
+that vault. It does not copy `data.json`, so the settings of that vault stay. Reload Obsidian in
+that vault after each deploy.
+
 The source has three layers. Each layer has one folder for each feature, and each feature folder
 has an `index.ts` for its public API.
 
