@@ -1,23 +1,19 @@
-import type { EmbeddedMetaPort, MetaStore } from "../../core/workspaces/ports";
-import { normalizeMetaMap } from "../../core/storage/migrations";
-import type { WorkspaceMeta } from "../../core/settings/settings";
+import type { MetaByName } from "../../core/organize";
+import { normalizeMetaMap, type MetaStore } from "../../core/storage";
+import type { EmbeddedMetaPort } from "../../core/workspaces";
 
 /**
- * Keeps workspace metadata inside `workspaces.json`, next to each layout.
- *
- * The trade: metadata travels with the vault config, survives uninstalling this
- * plugin, and needs no second file to stay in sync. Against that, it depends on
- * core preserving a key it does not recognize, which is undocumented behaviour.
- * That is why the sidecar is the default and this is opt-in.
+ * Opt-in. The metadata travels with the vault config, but it depends on core
+ * keeping a key that core does not know, which is undocumented behavior.
  */
 export class EmbeddedStore implements MetaStore {
-	constructor(private readonly core: EmbeddedMetaPort) {}
+	constructor(private readonly file: EmbeddedMetaPort) {}
 
-	async read(): Promise<Record<string, WorkspaceMeta>> {
-		return normalizeMetaMap(this.core.readMeta());
+	async read(): Promise<MetaByName> {
+		return normalizeMetaMap(this.file.readMeta());
 	}
 
-	async write(workspaces: Record<string, WorkspaceMeta>): Promise<void> {
-		await this.core.writeMeta({ ...workspaces });
+	async write(workspaces: MetaByName): Promise<void> {
+		await this.file.writeMeta({ ...workspaces });
 	}
 }

@@ -1,26 +1,15 @@
-import type { MetaStore } from "../../core/workspaces/ports";
-import type { PersistedData, WorkspaceMeta } from "../../core/settings/settings";
+import type { MetaByName } from "../../core/organize";
+import type { DataOwner, MetaStore } from "../../core/storage";
 
-/**
- * Keeps workspace metadata in this plugin's own `data.json`.
- *
- * The default, because it leaves `workspaces.json` byte-for-byte what vanilla
- * Obsidian writes. Settings live in the same file, so both share one read and
- * one write through the owner below.
- */
-export interface DataOwner {
-	current(): PersistedData;
-	replace(data: PersistedData): Promise<void>;
-}
-
+/** The default. It leaves `workspaces.json` byte-for-byte what vanilla Obsidian writes. */
 export class SidecarStore implements MetaStore {
 	constructor(private readonly owner: DataOwner) {}
 
-	async read(): Promise<Record<string, WorkspaceMeta>> {
+	async read(): Promise<MetaByName> {
 		return this.owner.current().workspaces;
 	}
 
-	async write(workspaces: Record<string, WorkspaceMeta>): Promise<void> {
+	async write(workspaces: MetaByName): Promise<void> {
 		await this.owner.replace({ ...this.owner.current(), workspaces });
 	}
 }

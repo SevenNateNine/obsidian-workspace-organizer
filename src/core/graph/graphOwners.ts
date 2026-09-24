@@ -1,58 +1,35 @@
-/**
- * Who owns the graph settings when more than one plugin wants them.
- *
- * This plugin stores one set of graph settings per workspace and applies them
- * globally, through the one undocumented access in `GraphOptionsAdapter`. Other
- * plugins do the same job per pane, which is strictly better when they are
- * installed: with both running, a switch writes `graph.json` twice and whichever
- * applies last wins.
- *
- * So the default is to step aside when one of them is on. The list below can
- * never be complete, which is why `always` and `never` exist: auto is a
- * convenience, and the explicit modes are the answer for anything it misses.
- */
-
-/** When to save and restore graph settings with a workspace. */
-export type GraphMode = "auto" | "always" | "never";
-
-export const GRAPH_MODES: GraphMode[] = ["auto", "always", "never"];
+import type { GraphMode } from "../settings";
 
 /**
- * Community plugins that own graph settings themselves, by plugin id.
+ * Community plugins that store graph settings per pane, which is better than the
+ * one global set this plugin applies. With both on, a switch writes `graph.json`
+ * twice and the last one wins, so `auto` stands aside.
  *
- * The value is the display name, shown in settings so the user can see what
- * auto reacted to rather than only that it backed off.
+ * This list can never be complete. That is why `always` and `never` exist.
  */
-export const GRAPH_OWNERS: Record<string, string> = {
+export const GRAPH_OWNERS: Readonly<Record<string, string>> = {
 	"graph-profiles": "Graph Profiles",
 	"graph-presets": "Graph Presets",
 	"extended-graph": "Extended Graph",
 };
 
-export interface GraphModeResolution {
-	/** Whether to capture and apply graph settings at all. */
-	active: boolean;
-	/** The plugin auto stepped aside for, or null. Null whenever mode is not `auto`. */
-	blockedBy: string | null;
-}
+export type GraphModeResolution =
+	| { readonly active: true; readonly blockedBy: null }
+	| { readonly active: false; readonly blockedBy: string | null };
 
-/**
- * Turn the setting plus the enabled plugin list into a yes or no.
- *
- * `enabledIds` is read fresh at each decision point rather than cached, because
- * Obsidian fires no documented event when another plugin is turned on or off.
- */
+const ACTIVE: GraphModeResolution = { active: true, blockedBy: null };
+const INACTIVE: GraphModeResolution = { active: false, blockedBy: null };
+
 export function resolveGraphMode(
 	mode: GraphMode,
 	enabledIds: readonly string[],
 ): GraphModeResolution {
-	if (mode === "never") return { active: false, blockedBy: null };
-	if (mode === "always") return { active: true, blockedBy: null };
+	if (mode === "never") return INACTIVE;
+	if (mode === "always") return ACTIVE;
 
 	for (const id of enabledIds) {
 		const name = GRAPH_OWNERS[id];
 		if (name) return { active: false, blockedBy: name };
 	}
-
-	return { active: true, blockedBy: null };
+	return ACTIVE;
 }

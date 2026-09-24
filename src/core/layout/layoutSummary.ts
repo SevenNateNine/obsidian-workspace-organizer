@@ -1,36 +1,31 @@
-/**
- * Describe a stored workspace layout in one line.
- *
- * Core stores an opaque layout tree per workspace and shows the user nothing
- * about it, so a workspace list is a list of bare names. This walks that tree
- * and reports what is actually in it.
- *
- * The tree is an undocumented shape that can change between Obsidian releases,
- * so everything here treats it as untrusted: an unknown node type recurses into
- * its children, and a malformed tree summarizes as empty rather than throwing.
- */
+import { isRecord, type JsonObject } from "../shared";
+
+// The layout tree is undocumented and can change in any release. An unknown node
+// recurses into its children, and a malformed tree summarizes as empty.
 
 export interface LayoutSummary {
-	/** Editor tabs. Sidebar panels are not counted. */
+	/** Editor tabs. Sidebar panels do not count. */
+	readonly tabs: number;
+	/** Splits with more than one child. */
+	readonly splits: number;
+	readonly windows: number;
+	/** De-duplicated, in layout order, not truncated. */
+	readonly names: readonly string[];
+}
+
+interface Tally {
 	tabs: number;
-	/** Split containers holding more than one child. */
 	splits: number;
-	/** Popout windows. */
 	windows: number;
-	/** De-duplicated, in layout order. Not truncated: see `formatSummary`. */
 	names: string[];
 }
 
 const EMPTY: LayoutSummary = { tabs: 0, splits: 0, windows: 0, names: [] };
 
-/**
- * Sidebar roots. Their contents are panels, not tabs, and counting them makes
- * every workspace look the same.
- */
-const SIDEBAR_KEYS = ["left", "right", "leftRibbon", "rightRibbon"];
+/** Sidebar contents are panels. Counting them makes every workspace look the same. */
+const SIDEBAR_KEYS: readonly string[] = ["left", "right", "leftRibbon", "rightRibbon"];
 
-/** Friendlier than the raw view type for the panes a user recognizes. */
-const VIEW_LABELS: Record<string, string> = {
+const VIEW_LABELS: Readonly<Record<string, string>> = {
 	empty: "New tab",
 	graph: "Graph",
 	localgraph: "Local graph",
@@ -53,78 +48,61 @@ const VIEW_LABELS: Record<string, string> = {
 export function summarizeLayout(layout: unknown): LayoutSummary {
 	if (!isRecord(layout)) return EMPTY;
 
-	const acc = { tabs: 0, splits: 0, windows: 0, names: [] as string[] };
-
+	const tally: Tally = { tabs: 0, splits: 0, windows: 0, names: [] };
 	for (const [key, value] of Object.entries(layout)) {
-		if (SIDEBAR_KEYS.includes(key)) continue;
-		walk(value, acc);
+		if (!SIDEBAR_KEYS.includes(key)) walk(value, tally);
 	}
-
-	return { ...acc, names: [...new Set(acc.names)] };
+	return { ...tally, names: [...new Set(tally.names)] };
 }
 
-interface Acc {
-	tabs: number;
-	splits: number;
-	windows: number;
-	names: string[];
-}
-
-function walk(node: unknown, acc: Acc): void {
+function walk(node: unknown, tally: Tally): void {
 	if (!isRecord(node)) return;
 
 	switch (node.type) {
 		case "leaf":
-			acc.tabs += 1;
-			acc.names.push(leafName(node));
+			tally.tabs += 1;
+			tally.names.push(leafName(node));
 			return;
 		case "split":
-			// A split of one is how core wraps a single pane. Only a real division
-			// of the editor area is worth reporting.
-			if (childrenOf(node).length > 1) acc.splits += 1;
+			// Core wraps a single pane in a split of one. That is not a division.
+			if (childrenOf(node).length > 1) tally.splits += 1;
 			break;
 		case "window":
-			acc.windows += 1;
+			tally.windows += 1;
 			break;
 		default:
 			break;
 	}
 
-	for (const child of childrenOf(node)) walk(child, acc);
+	for (const child of childrenOf(node)) walk(child, tally);
 }
 
-function childrenOf(node: Record<string, unknown>): unknown[] {
+function childrenOf(node: JsonObject): readonly unknown[] {
 	return Array.isArray(node.children) ? node.children : [];
 }
 
-/** A leaf names itself by its file, or by the kind of view it holds. */
-function leafName(leaf: Record<string, unknown>): string {
+function leafName(leaf: JsonObject): string {
 	const state = isRecord(leaf.state) ? leaf.state : {};
 	const inner = isRecord(state.state) ? state.state : {};
 	const file = typeof inner.file === "string" ? inner.file : "";
-
 	if (file) return basename(file);
 
 	const type = typeof state.type === "string" ? state.type : "";
 	return VIEW_LABELS[type] ?? titleCase(type) ?? "Pane";
 }
 
-/** Last path segment, without the markdown extension. Other kinds keep theirs. */
+/** Only the markdown extension is dropped. Other kinds keep theirs. */
 function basename(path: string): string {
 	const last = path.split("/").pop() ?? path;
 	return last.replace(/\.md$/i, "");
 }
 
 function titleCase(type: string): string | null {
-	if (!type) return null;
 	const words = type.replace(/[-_]+/g, " ").trim();
 	return words ? words.charAt(0).toUpperCase() + words.slice(1) : null;
 }
 
-/**
- * Render a summary as switcher subtext, for example
- * "5 tabs, 2 splits · Chapter 1, Outline, +3".
- */
+/** For example "5 tabs, 2 splits · Chapter 1, Outline, +3". */
 export function formatSummary(summary: LayoutSummary, maxNames = 3): string {
 	if (summary.tabs === 0 && summary.names.length === 0) return "Empty workspace";
 
@@ -142,8 +120,4 @@ export function formatSummary(summary: LayoutSummary, maxNames = 3): string {
 
 function plural(count: number, noun: string): string {
 	return `${count} ${noun}${count === 1 ? "" : "s"}`;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

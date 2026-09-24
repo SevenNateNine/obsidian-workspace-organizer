@@ -1,19 +1,9 @@
-/**
- * Tag rules, kept in one place because three surfaces need to agree: the edit
- * modal that accepts typed input, the chip bar that lists what exists, and the
- * switcher query that filters on "#tag".
- */
-
-/**
- * A tag as stored: lower case, no leading "#", inner runs of whitespace
- * collapsed to a hyphen. Returns "" for anything that normalizes to nothing,
- * which callers drop.
- */
+/** Lower case, no leading "#", inner whitespace as a hyphen. "" means no tag. */
 export function normalizeTag(raw: string): string {
 	return raw.trim().replace(/^#+/, "").trim().toLowerCase().replace(/\s+/g, "-");
 }
 
-/** Parse user input from the edit modal. Accepts commas, spaces, and "#". */
+/** Accepts commas, spaces, and "#". */
 export function parseTags(input: string): string[] {
 	return dedupe(
 		input
@@ -28,17 +18,14 @@ export function dedupe(tags: readonly string[]): string[] {
 }
 
 export interface ParsedQuery {
-	/** The query with every "#tag" token removed, for fuzzy matching. */
-	text: string;
-	/** Tags typed inline. Combined with the chip bar selection. */
-	tags: string[];
+	/** The query without its "#tag" tokens, for fuzzy matching. */
+	readonly text: string;
+	readonly tags: readonly string[];
 }
 
 /**
- * Split "#dev api notes" into the tags to filter on and the text to match.
- *
- * A bare trailing "#" is dropped rather than treated as a tag, so the list does
- * not empty out while the user is still typing the first character.
+ * A bare "#" is dropped, so the list does not empty while the user types the
+ * first character of a tag.
  */
 export function parseQuery(query: string): ParsedQuery {
 	const tags: string[] = [];
@@ -56,12 +43,7 @@ export function parseQuery(query: string): ParsedQuery {
 	return { text: words.join(" "), tags: dedupe(tags) };
 }
 
-/**
- * True when `tags` carries every tag in `required`.
- *
- * AND rather than OR: selecting a second chip should narrow the list. OR would
- * make each extra chip show more, which reads as the filter not working.
- */
+/** AND, not OR: a second chip must narrow the list, or the filter looks broken. */
 export function hasAllTags(
 	tags: readonly string[],
 	required: readonly string[],
@@ -70,12 +52,14 @@ export function hasAllTags(
 }
 
 export interface TagCount {
-	tag: string;
-	count: number;
+	readonly tag: string;
+	readonly count: number;
 }
 
-/** Every tag in use, most used first, then alphabetical. Drives the chip bar. */
-export function countTags(taggedItems: ReadonlyArray<{ tags: string[] }>): TagCount[] {
+/** Most used first, then alphabetical. */
+export function countTags(
+	taggedItems: ReadonlyArray<{ readonly tags: readonly string[] }>,
+): TagCount[] {
 	const counts = new Map<string, number>();
 
 	for (const item of taggedItems) {

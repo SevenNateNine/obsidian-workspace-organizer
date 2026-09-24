@@ -1,35 +1,31 @@
 import { normalizePath, type App } from "obsidian";
-import type { WorkspacesPort, EmbeddedMetaPort } from "../../core/workspaces/ports";
-import { WorkspaceError } from "../../core/shared/errors";
+import { WorkspaceError, clone, isRecord } from "../../core/shared";
 import {
-	EMPTY_FILE,
+	emptyWorkspacesFile,
 	entryFromLayout,
 	parseWorkspacesFile,
 	serializeWorkspacesFile,
+	type EmbeddedMetaPort,
+	type WorkspacesPort,
 	type WorkspacesFile,
-} from "../../core/workspaces/workspaceFile";
-import { isCoreWorkspacesEnabled } from "../plugins/pluginState";
+} from "../../core/workspaces";
+import { isCoreWorkspacesEnabled } from "../plugins";
 
-/** The key this plugin adds to an entry in embedded storage mode. */
+/**
+ * The embedded metadata key keeps the name from before the plugin was renamed.
+ * A new name would orphan the metadata in every vault that uses embedded storage.
+ */
 const META_KEY = "extendedWorkspaces";
 
 /**
- * Reads and writes `.obsidian/workspaces.json` directly.
+ * The only writer of `.obsidian/workspaces.json`. It uses documented API only.
  *
- * This replaces the core Workspaces plugin rather than wrapping it, and uses
- * only documented API: `getLayout` and `changeLayout` for the live layout, and
- * the vault adapter for the file. Nothing here depends on `internalPlugins`,
- * so no undocumented shape can break it.
- *
- * The file format lives in `core/domain/workspaceFile.ts` and is tested against
- * a real core-written file.
- *
- * Core must be turned off. Both plugins writing the same file, which core also
- * caches in memory, loses a workspace with no message. `canMutate` reports
- * whether that is the case, and `flush` refuses as a last line of defence.
+ * It refuses to write while the core Workspaces plugin is on. Core writes the
+ * same file and caches it in memory, so one of the two loses a workspace with
+ * no message.
  */
 export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort {
-	private file: WorkspacesFile = { ...EMPTY_FILE };
+	private file: WorkspacesFile = emptyWorkspacesFile();
 	private coreEnabled = false;
 
 	constructor(private readonly app: App) {}
@@ -38,30 +34,20 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 		return normalizePath(`${this.app.vault.configDir}/workspaces.json`);
 	}
 
-	/**
-	 * Re-read the file and the core plugin state.
-	 *
-	 * Called before a read, because the vault can be synced from another device
-	 * or edited by hand while the plugin is running.
-	 */
 	async reload(): Promise<void> {
-		this.coreEnabled = await isCoreWorkspacesEnabled(
-			this.app.vault.adapter,
-			this.app.vault.configDir,
-		);
+		const { adapter, configDir } = this.app.vault;
+		this.coreEnabled = await isCoreWorkspacesEnabled(adapter, configDir);
 
 		try {
-			const adapter = this.app.vault.adapter;
 			this.file = (await adapter.exists(this.path))
 				? parseWorkspacesFile(await adapter.read(this.path))
-				: { ...EMPTY_FILE };
+				: emptyWorkspacesFile();
 		} catch (err) {
 			console.error("[workspace-organizer] could not read workspaces.json", err);
-			this.file = { ...EMPTY_FILE };
+			this.file = emptyWorkspacesFile();
 		}
 	}
 
-	/** True when core is on, which means this plugin must not write. */
 	isBlockedByCore(): boolean {
 		return this.coreEnabled;
 	}
@@ -86,17 +72,14 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 		return this.file.workspaces[name] ?? null;
 	}
 
-	/** Only called from a user action, which is always after `onLayoutReady`. */
+	/** Only a user action calls this, and that is always after `onLayoutReady`. */
 	liveLayout(): unknown {
 		return this.app.workspace.getLayout();
 	}
 
 	/**
-	 * Capture what is on screen now and store it under `name`.
-	 *
-	 * Embedded metadata lives on the entry, and `getLayout` cannot know about it.
-	 * Dropping the key here makes `reconcile` treat the workspace as newly seen,
-	 * which resets its tags, description, archived flag, and order. Carry it over.
+	 * `getLayout` knows nothing of embedded metadata. If the key is dropped,
+	 * `reconcile` sees a new workspace and resets its tags and order.
 	 */
 	async save(name: string): Promise<void> {
 		const previous = this.file.workspaces[name];
@@ -110,12 +93,7 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 		await this.flush();
 	}
 
-	/**
-	 * Store a layout we already hold, for rename and duplicate.
-	 *
-	 * The clone matters: sharing one object between two names would make a later
-	 * edit to either silently change both.
-	 */
+	/** The clone stops a later edit to one name from changing the other. */
 	async saveLayout(name: string, layout: unknown): Promise<void> {
 		this.file.workspaces[name] = clone(layout);
 		await this.flush();
@@ -125,7 +103,6 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 		const entry = this.file.workspaces[name];
 		if (entry === undefined) throw new WorkspaceError("not-found", name);
 
-		// Cloned so that applying the layout cannot mutate what we hold.
 		await this.app.workspace.changeLayout(clone(entry));
 		this.file.active = name;
 		await this.flush();
@@ -142,11 +119,8 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 		await this.flush();
 	}
 
-	// --- embedded storage mode -------------------------------------------
-
 	readMeta(): Record<string, unknown> {
 		const out: Record<string, unknown> = {};
-
 		for (const [name, entry] of Object.entries(this.file.workspaces)) {
 			const meta = isRecord(entry) ? entry[META_KEY] : undefined;
 			if (meta !== undefined) out[name] = meta;
@@ -154,10 +128,7 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 		return out;
 	}
 
-	/**
-	 * An entry with no metadata has the key removed rather than set to an empty
-	 * object, so turning this mode off leaves the file clean.
-	 */
+	/** An entry with no metadata loses the key, so turning this mode off leaves the file clean. */
 	async writeMeta(raw: Record<string, unknown>): Promise<void> {
 		for (const [name, entry] of Object.entries(this.file.workspaces)) {
 			if (!isRecord(entry)) continue;
@@ -168,22 +139,9 @@ export class DirectWorkspacesAdapter implements WorkspacesPort, EmbeddedMetaPort
 		await this.flush();
 	}
 
-	/**
-	 * Write the file.
-	 *
-	 * Refuses while core is on. Every caller is guarded already, so reaching
-	 * here means a guard was missed, and the cost of that is a lost workspace.
-	 */
+	/** Every caller has a guard already. The check here is the last defense. */
 	private async flush(): Promise<void> {
 		if (this.coreEnabled) throw new WorkspaceError("core-conflict");
 		await this.app.vault.adapter.write(this.path, serializeWorkspacesFile(this.file));
 	}
-}
-
-function clone<T>(value: T): T {
-	return JSON.parse(JSON.stringify(value)) as T;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

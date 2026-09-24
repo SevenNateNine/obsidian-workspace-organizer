@@ -1,32 +1,27 @@
 import { App, FuzzySuggestModal, type FuzzyMatch } from "obsidian";
-import type {
-	WorkspaceEntry,
-	WorkspaceRegistry,
-} from "../../core/workspaces/WorkspaceRegistry";
-import type { PluginSettings } from "../../core/settings/settings";
-import { countTags, parseQuery } from "../../core/organize/tags";
+import { countTags, parseQuery } from "../../core/organize";
+import type { WorkspaceEntry, WorkspaceRegistry } from "../../core/workspaces";
 import { describe } from "./describe";
 
-export interface SwitcherDeps {
-	registry: WorkspaceRegistry;
-	settings: PluginSettings;
-	onChoose: (name: string) => void;
+export interface SwitcherOptions {
+	readonly registry: WorkspaceRegistry;
+	readonly showArchived: boolean;
+	readonly previewNameCount: number;
+	readonly onChoose: (name: string) => void;
 }
 
 export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
-	/** Tags picked from the chip bar. */
-	private chosenTags: string[] = [];
-	/** Tags typed as "#tag" in the query. Refreshed on every keystroke. */
-	private queryTags: string[] = [];
+	private chosenTags: readonly string[] = [];
+	private queryTags: readonly string[] = [];
 	private showArchived: boolean;
 	private chipBar: HTMLElement | null = null;
 
 	constructor(
 		app: App,
-		private readonly deps: SwitcherDeps,
+		private readonly opts: SwitcherOptions,
 	) {
 		super(app);
-		this.showArchived = deps.settings.showArchived;
+		this.showArchived = opts.showArchived;
 
 		this.setPlaceholder("Switch workspace…");
 		this.setInstructions([
@@ -39,32 +34,23 @@ export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 
 	override onOpen(): void {
 		super.onOpen();
-
-		// Above the results and below the search box, where a filter bar sits in
-		// the rest of the app.
 		this.chipBar = createDiv({ cls: "ew-tagbar" });
 		this.resultContainerEl.before(this.chipBar);
 		this.renderChips();
 	}
 
 	getItems(): WorkspaceEntry[] {
-		return this.deps.registry.filtered({
+		return this.opts.registry.filtered({
 			tags: [...this.chosenTags, ...this.queryTags],
 			includeArchived: this.showArchived,
 		});
 	}
 
-	/** Tags and description join the haystack so a plain search finds them. */
 	getItemText(entry: WorkspaceEntry): string {
 		return [entry.name, ...entry.meta.tags, entry.meta.description].join(" ");
 	}
 
-	/**
-	 * Pull "#tag" out of the query before fuzzy matching.
-	 *
-	 * Without this the raw "#dev" would be matched character by character against
-	 * the item text and find nothing, because tags are stored without the hash.
-	 */
+	/** Tags are stored without "#", so a raw "#dev" would fuzzy-match nothing. */
 	override getSuggestions(query: string): FuzzyMatch<WorkspaceEntry>[] {
 		const parsed = parseQuery(query);
 		this.queryTags = parsed.tags;
@@ -74,9 +60,9 @@ export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 	override renderSuggestion(match: FuzzyMatch<WorkspaceEntry>, el: HTMLElement): void {
 		const { name, meta, isActive } = match.item;
 		const { primary, tooltip } = describe(
-			this.deps.registry.layoutOf(name),
+			this.opts.registry.layoutOf(name),
 			meta,
-			this.deps.settings.previewNameCount,
+			this.opts.previewNameCount,
 		);
 
 		el.addClass("ew-item");
@@ -96,21 +82,16 @@ export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 	}
 
 	onChooseItem(entry: WorkspaceEntry): void {
-		this.deps.onChoose(entry.name);
+		this.opts.onChoose(entry.name);
 	}
 
-	/**
-	 * Chips are built from every workspace, not from the filtered list, so the
-	 * vocabulary does not shrink as you narrow and strand you with no way back.
-	 */
+	/** Built from every workspace, so the chips do not vanish as the filter narrows. */
 	private renderChips(): void {
 		const bar = this.chipBar;
 		if (!bar) return;
 		bar.empty();
 
-		const all = this.deps.registry.entries();
-		const anyArchived = all.some((entry) => entry.meta.archived);
-
+		const all = this.opts.registry.entries();
 		for (const { tag, count } of countTags(all.map((entry) => entry.meta))) {
 			const chip = bar.createSpan({ cls: "ew-chip", text: `#${tag}` });
 			chip.createSpan({ cls: "ew-chip-count", text: String(count) });
@@ -118,7 +99,7 @@ export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 			chip.addEventListener("click", () => this.toggleTag(tag));
 		}
 
-		if (anyArchived) {
+		if (all.some((entry) => entry.meta.archived)) {
 			const chip = bar.createSpan({
 				cls: "ew-chip ew-chip-archived",
 				text: "archived",
@@ -140,7 +121,6 @@ export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 		this.refresh();
 	}
 
-	/** Re-run the search so the list reflects the new filter. */
 	private refresh(): void {
 		this.renderChips();
 		this.inputEl.dispatchEvent(new Event("input"));

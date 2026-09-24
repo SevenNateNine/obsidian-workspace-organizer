@@ -1,22 +1,22 @@
 import { App, Modal, Setting } from "obsidian";
-import { formatSummary, summarizeLayout } from "../../core/layout/layoutSummary";
-import { parseTags } from "../../core/organize/tags";
-import type { WorkspaceMeta } from "../../core/settings/settings";
+import { formatSummary, summarizeLayout } from "../../core/layout";
+import { parseTags, type EditableMeta, type WorkspaceMeta } from "../../core/organize";
 
-/** Edit the tags and description of one workspace. */
+export interface EditOptions {
+	readonly name: string;
+	readonly meta: WorkspaceMeta;
+	readonly layout: unknown;
+	readonly previewNameCount: number;
+	readonly onSave: (patch: EditableMeta) => void;
+}
+
 export class WorkspaceEditModal extends Modal {
-	private tags: string[];
+	private tags: readonly string[];
 	private description: string;
 
 	constructor(
 		app: App,
-		private readonly opts: {
-			name: string;
-			meta: WorkspaceMeta;
-			layout: unknown;
-			previewNameCount: number;
-			onSave: (patch: Pick<WorkspaceMeta, "tags" | "description">) => void;
-		},
+		private readonly opts: EditOptions,
 	) {
 		super(app);
 		this.tags = [...opts.meta.tags];
@@ -26,8 +26,7 @@ export class WorkspaceEditModal extends Modal {
 	override onOpen(): void {
 		this.titleEl.setText(this.opts.name);
 
-		// Shown so the user can see what a description would replace, rather than
-		// discovering the trade after saving.
+		// Shows what a description replaces, before the user saves one.
 		const preview = formatSummary(
 			summarizeLayout(this.opts.layout),
 			this.opts.previewNameCount,

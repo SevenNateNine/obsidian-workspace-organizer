@@ -1,30 +1,25 @@
+import { dedupe, defaultMeta, normalizeTag, type WorkspaceMeta } from "../organize";
 import {
-	CURRENT_SCHEMA_VERSION,
 	DEFAULT_SETTINGS,
+	GRAPH_MODES,
+	PREVIEW_NAME_COUNT,
 	STATUS_BAR_ACTIONS,
 	STORAGE_MODES,
 	SWITCH_PROMPTS,
-	defaultMeta,
-	type PersistedData,
+	type GraphMode,
 	type PluginSettings,
 	type StatusBarAction,
-	type StorageMode,
 	type SwitchPrompt,
-	type WorkspaceMeta,
-} from "../settings/settings";
-import { GRAPH_MODES, type GraphMode } from "../graph/graphOwners";
-import { dedupe, normalizeTag } from "../organize/tags";
+} from "../settings";
+import { isRecord } from "../shared";
+import { CURRENT_SCHEMA_VERSION, type PersistedData } from "./PersistedData";
 
 /**
- * Bring persisted data up to the current schema.
- *
- * Obsidian returns whatever the last version of this plugin wrote, which can be
- * older than this build, and a user can edit the file by hand. Everything here
- * treats the input as untrusted and merges onto known-good defaults.
+ * `data.json` can come from an older build or from a hand edit. Treat it as
+ * untrusted and merge it onto known-good defaults.
  */
 export function migrateData(raw: unknown): PersistedData {
 	const data = isRecord(raw) ? raw : {};
-
 	return {
 		schemaVersion: CURRENT_SCHEMA_VERSION,
 		settings: migrateSettings(data.settings),
@@ -34,46 +29,37 @@ export function migrateData(raw: unknown): PersistedData {
 
 function migrateSettings(raw: unknown): PluginSettings {
 	const stored = isRecord(raw) ? raw : {};
-	const statusBar = isRecord(stored.statusBar) ? stored.statusBar : {};
+	const defaults = DEFAULT_SETTINGS;
 
-	// Pulled out of the spread so the renamed key does not linger in `data.json`
-	// beside the one that replaced it.
+	// Taken out of the spread so that the renamed key does not stay in `data.json`.
 	const { saveGraphSettings: legacyGraph, ...rest } = stored;
 
 	return {
-		...DEFAULT_SETTINGS,
+		...defaults,
 		...rest,
-		storage: oneOf<StorageMode>(
-			stored.storage,
-			STORAGE_MODES,
-			DEFAULT_SETTINGS.storage,
-		),
-		promptOnSwitch: switchPrompt(
-			stored.promptOnSwitch,
-			DEFAULT_SETTINGS.promptOnSwitch,
-		),
-		graphSettings: graphMode(
-			stored.graphSettings,
-			legacyGraph,
-			DEFAULT_SETTINGS.graphSettings,
-		),
-		showArchived: bool(stored.showArchived, DEFAULT_SETTINGS.showArchived),
-		// A zero or negative count would render a preview with no names at all.
+		storage: oneOf(stored.storage, STORAGE_MODES, defaults.storage),
+		promptOnSwitch: switchPrompt(stored.promptOnSwitch, defaults.promptOnSwitch),
+		graphSettings: graphMode(stored.graphSettings, legacyGraph, defaults.graphSettings),
+		showArchived: bool(stored.showArchived, defaults.showArchived),
+		// Zero or less would render a preview with no names.
 		previewNameCount: clamp(
 			stored.previewNameCount,
-			1,
-			8,
-			DEFAULT_SETTINGS.previewNameCount,
+			PREVIEW_NAME_COUNT.min,
+			PREVIEW_NAME_COUNT.max,
+			defaults.previewNameCount,
 		),
-		statusBar: {
-			enabled: bool(statusBar.enabled, DEFAULT_SETTINGS.statusBar.enabled),
-			click: action(statusBar.click, DEFAULT_SETTINGS.statusBar.click),
-			middleClick: action(
-				statusBar.middleClick,
-				DEFAULT_SETTINGS.statusBar.middleClick,
-			),
-			rightClick: action(statusBar.rightClick, DEFAULT_SETTINGS.statusBar.rightClick),
-		},
+		statusBar: migrateStatusBar(stored.statusBar),
+	};
+}
+
+function migrateStatusBar(raw: unknown): PluginSettings["statusBar"] {
+	const stored = isRecord(raw) ? raw : {};
+	const defaults = DEFAULT_SETTINGS.statusBar;
+	return {
+		enabled: bool(stored.enabled, defaults.enabled),
+		click: action(stored.click, defaults.click),
+		middleClick: action(stored.middleClick, defaults.middleClick),
+		rightClick: action(stored.rightClick, defaults.rightClick),
 	};
 }
 
@@ -87,12 +73,7 @@ export function normalizeMetaMap(raw: unknown): Record<string, WorkspaceMeta> {
 	return out;
 }
 
-/**
- * Coerce one stored entry into a usable `WorkspaceMeta`.
- *
- * Also used by the embedded store, where the value comes out of
- * `workspaces.json` and may have been written by a different plugin version.
- */
+/** Also reads embedded metadata, which another plugin version can have written. */
 export function normalizeMeta(raw: unknown): WorkspaceMeta {
 	const stored = isRecord(raw) ? raw : {};
 	const fallback = defaultMeta();
@@ -101,16 +82,12 @@ export function normalizeMeta(raw: unknown): WorkspaceMeta {
 		tags: normalizeTags(stored.tags),
 		archived: bool(stored.archived, fallback.archived),
 		description: typeof stored.description === "string" ? stored.description : "",
-		// Order is authoritative only after `reconcile` renumbers it.
+		// Only `reconcile` makes the order authoritative.
 		order: clamp(stored.order, 0, Number.MAX_SAFE_INTEGER, fallback.order),
 	};
 
-	// The key is omitted rather than set to undefined, for
-	// `exactOptionalPropertyTypes`. The contents stay opaque, because the shape
-	// belongs to core.
-	if (isRecord(stored.graph)) meta.graph = stored.graph;
-
-	return meta;
+	// Omitted rather than undefined, for `exactOptionalPropertyTypes`. The shape belongs to core.
+	return isRecord(stored.graph) ? { ...meta, graph: stored.graph } : meta;
 }
 
 function normalizeTags(raw: unknown): string[] {
@@ -123,31 +100,37 @@ function normalizeTags(raw: unknown): string[] {
 	);
 }
 
-/** A build before the three modes wrote a boolean here. */
+/** An older build wrote a boolean here. */
 function switchPrompt(value: unknown, fallback: SwitchPrompt): SwitchPrompt {
 	if (value === true) return "always";
 	if (value === false) return "never";
-	return oneOf<SwitchPrompt>(value, SWITCH_PROMPTS, fallback);
+	return oneOf(value, SWITCH_PROMPTS, fallback);
 }
 
 /**
- * A build before the three modes wrote a boolean under `saveGraphSettings`.
- *
- * On becomes `auto` rather than `always`, so an upgrade picks up the standing
- * aside behaviour instead of keeping the double write it was written before.
+ * An older build wrote a boolean under `saveGraphSettings`. True becomes `auto`,
+ * not `always`, so an upgrade gets the stand-aside behavior.
  */
 function graphMode(value: unknown, legacy: unknown, fallback: GraphMode): GraphMode {
-	if (GRAPH_MODES.includes(value as GraphMode)) return value as GraphMode;
+	if (isOneOf(value, GRAPH_MODES)) return value;
 	if (typeof legacy === "boolean") return legacy ? "auto" : "never";
 	return fallback;
 }
 
 function action(value: unknown, fallback: StatusBarAction): StatusBarAction {
-	return oneOf<StatusBarAction>(value, STATUS_BAR_ACTIONS, fallback);
+	return oneOf(value, STATUS_BAR_ACTIONS, fallback);
 }
 
-function oneOf<T extends string>(value: unknown, allowed: T[], fallback: T): T {
-	return allowed.includes(value as T) ? (value as T) : fallback;
+function isOneOf<T extends string>(value: unknown, allowed: readonly T[]): value is T {
+	return allowed.includes(value as T);
+}
+
+function oneOf<T extends string>(
+	value: unknown,
+	allowed: readonly T[],
+	fallback: T,
+): T {
+	return isOneOf(value, allowed) ? value : fallback;
 }
 
 function bool(value: unknown, fallback: boolean): boolean {
@@ -157,8 +140,4 @@ function bool(value: unknown, fallback: boolean): boolean {
 function clamp(value: unknown, min: number, max: number, fallback: number): number {
 	if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
 	return Math.min(max, Math.max(min, Math.round(value)));
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

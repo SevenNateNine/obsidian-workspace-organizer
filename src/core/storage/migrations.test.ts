@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { migrateData, normalizeMeta } from "./migrations";
-import { CURRENT_SCHEMA_VERSION, DEFAULT_SETTINGS } from "../settings/settings";
+import { DEFAULT_SETTINGS } from "../settings";
+import { CURRENT_SCHEMA_VERSION } from "./PersistedData";
 
 describe("migrateData", () => {
 	it("returns defaults for a first run", () => {
@@ -42,7 +43,9 @@ describe("migrateData", () => {
 				.promptOnSwitch,
 		).toBe(DEFAULT_SETTINGS.promptOnSwitch);
 	});
+});
 
+describe("migrateData graph mode", () => {
 	it("defaults the graph mode and rejects a bad value", () => {
 		expect(migrateData({}).settings.graphSettings).toBe(DEFAULT_SETTINGS.graphSettings);
 		expect(

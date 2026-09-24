@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { move, reconcile, renameKey, sortedNames } from "./reconcile";
-import { defaultMeta, type WorkspaceMeta } from "../settings/settings";
+import { defaultMeta, type WorkspaceMeta } from "../organize";
 
 function meta(overrides: Partial<WorkspaceMeta> = {}): WorkspaceMeta {
 	return { ...defaultMeta(), ...overrides };

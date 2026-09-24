@@ -1,18 +1,19 @@
 import { App, Modal, Setting } from "obsidian";
 
-/** Ask for a single line of text. Used for save-as, rename, and duplicate. */
+export interface PromptOptions {
+	readonly title: string;
+	readonly placeholder?: string;
+	readonly initial?: string;
+	readonly cta: string;
+	readonly onSubmit: (value: string) => void;
+}
+
 export class PromptModal extends Modal {
 	private value: string;
 
 	constructor(
 		app: App,
-		private readonly opts: {
-			title: string;
-			placeholder?: string;
-			initial?: string;
-			cta: string;
-			onSubmit: (value: string) => void;
-		},
+		private readonly opts: PromptOptions,
 	) {
 		super(app);
 		this.value = opts.initial ?? "";
@@ -30,10 +31,9 @@ export class PromptModal extends Modal {
 
 		input.addEventListener("input", () => (this.value = input.value));
 		input.addEventListener("keydown", (event) => {
-			if (event.key === "Enter") {
-				event.preventDefault();
-				this.submit();
-			}
+			if (event.key !== "Enter") return;
+			event.preventDefault();
+			this.submit();
 		});
 
 		new Setting(this.contentEl)
@@ -47,8 +47,7 @@ export class PromptModal extends Modal {
 				button.setButtonText("Cancel").onClick(() => this.close()),
 			);
 
-		// Selected rather than merely focused: rename and duplicate both start
-		// from an existing name that the user usually replaces wholesale.
+		// Rename and duplicate start from a name that the user usually replaces.
 		input.focus();
 		input.select();
 	}
@@ -58,98 +57,6 @@ export class PromptModal extends Modal {
 		if (!value) return;
 		this.close();
 		this.opts.onSubmit(value);
-	}
-
-	override onClose(): void {
-		this.contentEl.empty();
-	}
-}
-
-/** Confirm something destructive. */
-export class ConfirmModal extends Modal {
-	constructor(
-		app: App,
-		private readonly opts: {
-			title: string;
-			message: string;
-			cta: string;
-			onConfirm: () => void;
-		},
-	) {
-		super(app);
-	}
-
-	override onOpen(): void {
-		this.titleEl.setText(this.opts.title);
-		this.contentEl.createEl("p", { text: this.opts.message });
-
-		new Setting(this.contentEl)
-			.addButton((button) =>
-				button
-					.setButtonText(this.opts.cta)
-					.setWarning()
-					.onClick(() => {
-						this.close();
-						this.opts.onConfirm();
-					}),
-			)
-			.addButton((button) =>
-				button.setButtonText("Cancel").onClick(() => this.close()),
-			);
-	}
-
-	override onClose(): void {
-		this.contentEl.empty();
-	}
-}
-
-export type SwitchChoice = "save" | "save-as" | "discard";
-
-/**
- * Ask what to do with the current layout before switching away.
- *
- * Shown on every switch, or only after `layoutsDiffer` reports a change, as the
- * `promptOnSwitch` setting says. The comparison walks an undocumented tree that
- * core can reshape in any release, so it fails toward showing this modal.
- */
-export class SaveOnSwitchModal extends Modal {
-	constructor(
-		app: App,
-		private readonly opts: {
-			current: string;
-			target: string;
-			onChoose: (choice: SwitchChoice) => void;
-		},
-	) {
-		super(app);
-	}
-
-	override onOpen(): void {
-		this.titleEl.setText(`Switch to ${this.opts.target}`);
-		this.contentEl.createEl("p", {
-			text: `Save the current layout to "${this.opts.current}" first?`,
-		});
-
-		new Setting(this.contentEl)
-			.addButton((button) =>
-				button
-					.setButtonText("Save and switch")
-					.setCta()
-					.onClick(() => this.choose("save")),
-			)
-			.addButton((button) =>
-				button.setButtonText("Save as new…").onClick(() => this.choose("save-as")),
-			)
-			.addButton((button) =>
-				button
-					.setButtonText("Switch without saving")
-					.onClick(() => this.choose("discard")),
-			);
-	}
-
-	private choose(choice: SwitchChoice): void {
-		this.close();
-		this.opts.onChoose(choice);
 	}
 
 	override onClose(): void {

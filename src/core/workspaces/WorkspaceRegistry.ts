@@ -1,31 +1,23 @@
-import { WorkspaceError } from "../shared/errors";
-import type { MetaStore, WorkspacesPort } from "./ports";
-import { layoutsDiffer } from "../layout/layoutDiff";
+import { layoutsDiffer } from "../layout";
+import { defaultMeta, hasAllTags, type WorkspaceMeta } from "../organize";
+import { WorkspaceError } from "../shared";
+import type { MetaStore } from "../storage";
+import type { WorkspacesPort } from "./ports";
 import { move, reconcile, renameKey, sortedNames } from "./reconcile";
-import { hasAllTags } from "../organize/tags";
-import { defaultMeta, type WorkspaceMeta } from "../settings/settings";
 
 export interface WorkspaceEntry {
-	name: string;
-	meta: WorkspaceMeta;
-	isActive: boolean;
+	readonly name: string;
+	readonly meta: WorkspaceMeta;
+	readonly isActive: boolean;
 }
 
 export interface Filter {
 	/** A workspace must carry all of these. Empty matches everything. */
-	tags: string[];
-	includeArchived: boolean;
+	readonly tags: readonly string[];
+	readonly includeArchived: boolean;
 }
 
-/**
- * The plugin's view of the workspace list: core's names joined to our metadata.
- *
- * Policy only. It talks to core and to storage through ports, so the whole of
- * it is exercised in tests with fakes, and none of the Obsidian API reaches it.
- *
- * Every mutation goes through core, which stays the only writer of
- * `workspaces.json`.
- */
+/** Core's workspace names joined to our metadata. Core stays the only writer of the file. */
 export class WorkspaceRegistry {
 	private metas: Record<string, WorkspaceMeta> = {};
 
@@ -34,12 +26,7 @@ export class WorkspaceRegistry {
 		private readonly store: MetaStore,
 	) {}
 
-	/**
-	 * Re-derive metadata from core's current list.
-	 *
-	 * Call before any read. Core fires no change events, so this is the only
-	 * thing keeping us honest when a workspace is created or deleted elsewhere.
-	 */
+	/** Call before a read. Core fires no change event. */
 	async refresh(): Promise<void> {
 		if (!this.core.isAvailable()) {
 			this.metas = {};
@@ -54,10 +41,9 @@ export class WorkspaceRegistry {
 		if (changed) await this.store.write(workspaces);
 	}
 
-	/** Every workspace in manager order, archived ones included. */
+	/** Manager order, archived included. */
 	entries(): WorkspaceEntry[] {
-		const active = this.core.isAvailable() ? this.core.activeName() : null;
-
+		const active = this.activeName();
 		return sortedNames(this.metas).map((name) => ({
 			name,
 			meta: this.metas[name] ?? defaultMeta(),
@@ -65,12 +51,11 @@ export class WorkspaceRegistry {
 		}));
 	}
 
-	/** What the switcher shows. */
 	filtered(filter: Filter): WorkspaceEntry[] {
 		return this.entries().filter(
-			(entry) =>
-				(filter.includeArchived || !entry.meta.archived) &&
-				hasAllTags(entry.meta.tags, filter.tags),
+			({ meta }) =>
+				(filter.includeArchived || !meta.archived) &&
+				hasAllTags(meta.tags, filter.tags),
 		);
 	}
 
@@ -82,7 +67,6 @@ export class WorkspaceRegistry {
 		return this.core.isAvailable() ? this.core.layoutOf(name) : null;
 	}
 
-	/** True when the layout on screen differs from what `name` holds. */
 	hasUnsavedChanges(name: string): boolean {
 		if (!this.core.isAvailable()) return true;
 		return layoutsDiffer(this.core.liveLayout(), this.core.layoutOf(name));
@@ -96,48 +80,35 @@ export class WorkspaceRegistry {
 		return this.core.isAvailable();
 	}
 
-	/**
-	 * False when the list is readable but must not be changed, which is what
-	 * happens while the core Workspaces plugin is also running.
-	 */
 	canMutate(): boolean {
 		return this.core.canMutate();
 	}
 
-	/** Save the live layout under `name`, creating it or overwriting it. */
 	async save(name: string): Promise<void> {
 		this.requireWritable();
-		const clean = this.requireName(name);
-		await this.core.save(clean);
+		await this.core.save(this.requireName(name));
 		await this.refresh();
 	}
 
 	async switchTo(name: string): Promise<void> {
 		this.requireWritable();
-		if (!this.core.list().includes(name)) throw new WorkspaceError("not-found", name);
+		this.requireExisting(name);
 		await this.core.load(name);
 	}
 
 	/**
-	 * Rename by copying the stored layout to the new name and dropping the old.
-	 *
-	 * The layout is moved as-is rather than re-captured from the screen, so
-	 * renaming a workspace you are not currently in does not quietly replace its
-	 * panes with the ones in front of you.
+	 * Moves the stored layout as it is. Capturing the screen instead would replace
+	 * the panes of a workspace that is not open with the ones on screen.
 	 */
 	async rename(from: string, to: string): Promise<void> {
 		this.requireWritable();
 		const clean = this.requireName(to);
 		if (clean === from) return;
 		this.requireFree(clean);
+		const layout = this.requireLayout(from);
 
-		const layout = this.core.layoutOf(from);
-		if (layout == null) throw new WorkspaceError("not-found", from);
-
-		// Deleting the old name clears the active marker when it pointed there,
-		// so carry it over rather than leaving nothing active.
+		// Deleting the old name clears the active marker, so carry it over.
 		const wasActive = this.core.activeName() === from;
-
 		await this.core.saveLayout(clean, layout);
 		await this.core.delete(from);
 		if (wasActive) await this.core.setActive(clean);
@@ -146,27 +117,22 @@ export class WorkspaceRegistry {
 		await this.persist();
 	}
 
-	/** Copy a workspace, tags and description included. */
 	async duplicate(from: string, to: string): Promise<void> {
 		this.requireWritable();
 		const clean = this.requireName(to);
 		this.requireFree(clean);
-
-		const layout = this.core.layoutOf(from);
-		if (layout == null) throw new WorkspaceError("not-found", from);
-
-		await this.core.saveLayout(clean, layout);
+		await this.core.saveLayout(clean, this.requireLayout(from));
 
 		const source = this.metas[from];
 		await this.refresh();
-		if (source)
+		if (source) {
 			await this.setMeta(clean, { ...source, order: this.metas[clean]?.order ?? 0 });
+		}
 	}
 
 	async remove(name: string): Promise<void> {
 		this.requireWritable();
-		if (!this.core.list().includes(name)) throw new WorkspaceError("not-found", name);
-
+		this.requireExisting(name);
 		await this.core.delete(name);
 		await this.refresh();
 	}
@@ -179,18 +145,12 @@ export class WorkspaceRegistry {
 		await this.persist();
 	}
 
-	/** Move a workspace up or down the manager list. */
 	async moveBy(name: string, delta: number): Promise<void> {
 		this.metas = move(this.metas, name, delta);
 		await this.persist();
 	}
 
-	/**
-	 * The next or previous workspace, wrapping around.
-	 *
-	 * Steps through what the switcher would show, so a tag filter narrows the
-	 * hotkeys too. Null when there is nowhere to go.
-	 */
+	/** Wraps around. Steps through what the switcher shows. Null when there is nowhere to go. */
 	step(delta: number, filter: Filter): string | null {
 		const names = this.filtered(filter).map((entry) => entry.name);
 		if (names.length === 0) return null;
@@ -217,5 +177,15 @@ export class WorkspaceRegistry {
 
 	private requireFree(name: string): void {
 		if (this.core.list().includes(name)) throw new WorkspaceError("name-taken", name);
+	}
+
+	private requireExisting(name: string): void {
+		if (!this.core.list().includes(name)) throw new WorkspaceError("not-found", name);
+	}
+
+	private requireLayout(name: string): unknown {
+		const layout = this.core.layoutOf(name);
+		if (layout == null) throw new WorkspaceError("not-found", name);
+		return layout;
 	}
 }

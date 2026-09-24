@@ -1,20 +1,12 @@
-import { formatSummary, summarizeLayout } from "../../core/layout/layoutSummary";
-import type { WorkspaceMeta } from "../../core/settings/settings";
+import { formatSummary, summarizeLayout } from "../../core/layout";
+import type { WorkspaceMeta } from "../../core/organize";
 
 export interface Described {
-	/** The subtext line. */
-	primary: string;
-	/** The hover tooltip, which always includes the generated preview. */
-	tooltip: string;
+	readonly primary: string;
+	readonly tooltip: string;
 }
 
-/**
- * Decide what a workspace row says about itself.
- *
- * A written description wins the visible line, because someone typed it on
- * purpose. The generated preview is never lost though: it moves to the tooltip,
- * where it stays available without costing a second row of height.
- */
+/** A typed description wins the visible line. The generated preview moves to the tooltip. */
 export function describe(
 	layout: unknown,
 	meta: WorkspaceMeta,

@@ -1,34 +1,25 @@
-import { defaultMeta, type WorkspaceMeta } from "../settings/settings";
+import { defaultMeta, type MetaByName, type WorkspaceMeta } from "../organize";
 
 export interface Reconciled {
-	workspaces: Record<string, WorkspaceMeta>;
+	readonly workspaces: Record<string, WorkspaceMeta>;
 	/** False means the caller can skip the write. */
-	changed: boolean;
+	readonly changed: boolean;
 }
 
 /**
- * Make our metadata agree with core's workspace list.
+ * Makes our metadata agree with core's list.
  *
- * Core fires no create, rename, or delete event, and the user can change the
- * list without us: through core's own switcher, by hand-editing
- * `workspaces.json`, or by syncing the vault from another device. So rather
- * than watch for changes, we re-derive from the live names whenever we are
- * about to read.
- *
- * - A name core no longer has loses its metadata.
- * - A name we have never seen gets defaults, appended after the known ones.
- * - `order` is renumbered contiguously from 0, preserving relative order.
+ * Core fires no create, rename, or delete event, and the list can change through
+ * a hand edit or a sync. So we derive again from the live names before each read.
+ * A gone name loses its metadata. A new name gets defaults after the known ones.
+ * `order` is renumbered from 0.
  */
 export function reconcile(
 	coreNames: readonly string[],
-	stored: Readonly<Record<string, WorkspaceMeta>>,
+	stored: MetaByName,
 ): Reconciled {
 	const live = new Set(coreNames);
-
-	const known = Object.entries(stored)
-		.filter(([name]) => live.has(name))
-		.sort(([nameA, a], [nameB, b]) => a.order - b.order || nameA.localeCompare(nameB));
-
+	const known = sortedEntries(stored).filter(([name]) => live.has(name));
 	const seen = new Set(known.map(([name]) => name));
 	const added = coreNames
 		.filter((name) => !seen.has(name))
@@ -42,9 +33,8 @@ export function reconcile(
 	return { workspaces, changed: !sameMap(stored, workspaces) };
 }
 
-/** Move one workspace's metadata to a new name, for rename. */
 export function renameKey(
-	stored: Readonly<Record<string, WorkspaceMeta>>,
+	stored: MetaByName,
 	from: string,
 	to: string,
 ): Record<string, WorkspaceMeta> {
@@ -55,14 +45,9 @@ export function renameKey(
 	return { ...rest, [to]: meta };
 }
 
-/**
- * Move a workspace up or down in the manager.
- *
- * Returns the map unchanged when the move would fall off either end, so the
- * caller can skip a pointless write.
- */
+/** Returns the map unchanged when the move falls off either end. */
 export function move(
-	stored: Readonly<Record<string, WorkspaceMeta>>,
+	stored: MetaByName,
 	name: string,
 	delta: number,
 ): Record<string, WorkspaceMeta> {
@@ -81,31 +66,34 @@ export function move(
 	return out;
 }
 
-/** Manager order: by `order`, then by name so the result is never arbitrary. */
-export function sortedNames(stored: Readonly<Record<string, WorkspaceMeta>>): string[] {
-	return Object.entries(stored)
-		.sort(([nameA, a], [nameB, b]) => a.order - b.order || nameA.localeCompare(nameB))
-		.map(([name]) => name);
+/** By `order`, then by name, so the result is never arbitrary. */
+export function sortedNames(stored: MetaByName): string[] {
+	return sortedEntries(stored).map(([name]) => name);
 }
 
-function sameMap(
-	a: Readonly<Record<string, WorkspaceMeta>>,
-	b: Readonly<Record<string, WorkspaceMeta>>,
-): boolean {
+function sortedEntries(stored: MetaByName): [string, WorkspaceMeta][] {
+	return Object.entries(stored).sort(
+		([nameA, a], [nameB, b]) => a.order - b.order || nameA.localeCompare(nameB),
+	);
+}
+
+function sameMap(a: MetaByName, b: MetaByName): boolean {
 	const keysA = Object.keys(a);
 	if (keysA.length !== Object.keys(b).length) return false;
 
 	return keysA.every((key) => {
 		const left = a[key];
 		const right = b[key];
-		return (
-			left !== undefined &&
-			right !== undefined &&
-			left.archived === right.archived &&
-			left.description === right.description &&
-			left.order === right.order &&
-			left.tags.length === right.tags.length &&
-			left.tags.every((tag, i) => tag === right.tags[i])
-		);
+		return left !== undefined && right !== undefined && sameMeta(left, right);
 	});
+}
+
+function sameMeta(left: WorkspaceMeta, right: WorkspaceMeta): boolean {
+	return (
+		left.archived === right.archived &&
+		left.description === right.description &&
+		left.order === right.order &&
+		left.tags.length === right.tags.length &&
+		left.tags.every((tag, i) => tag === right.tags[i])
+	);
 }

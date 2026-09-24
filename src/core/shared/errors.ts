@@ -1,9 +1,3 @@
-/**
- * Typed failure reasons.
- *
- * Every one of these is something the user can act on, so each maps to a
- * specific sentence rather than a generic "something went wrong".
- */
 export type WorkspaceErrorKind =
 	"core-conflict" | "not-found" | "name-taken" | "empty-name" | "no-active" | "unknown";
 
@@ -17,7 +11,7 @@ export class WorkspaceError extends Error {
 	}
 }
 
-const MESSAGES: Record<WorkspaceErrorKind, string> = {
+const MESSAGES: Readonly<Record<WorkspaceErrorKind, string>> = {
 	"core-conflict":
 		"Turn off the core Workspaces plugin first: Settings, Core plugins, Workspaces. Both write the same file and would overwrite each other.",
 	"not-found": "That workspace no longer exists.",

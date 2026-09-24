@@ -1,0 +1,1 @@
+export { DirectWorkspacesAdapter } from "./DirectWorkspacesAdapter";
