@@ -91,7 +91,7 @@ npm run build   # type check, then a minified main.js
 
 The plugin lives inside the vault at `.obsidian/plugins/obsidian-workspace-organizer`, so `npm run dev` plus an Obsidian reload is the whole loop.
 
-`src/core/` holds the logic and imports no Obsidian API, which is what makes it testable. `src/adapters/` holds the Obsidian details. `src/ui/` holds the modals and the settings tab. See `AGENTS.md` for the full conventions.
+`src/core/` holds the logic and imports no Obsidian API, which is what makes it testable. `src/obsidian/` holds the Obsidian details. `src/ui/` holds the modals and the settings tab. See `AGENTS.md` for the full conventions.
 
 ## Credit
 
