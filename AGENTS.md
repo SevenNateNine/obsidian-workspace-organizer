@@ -12,8 +12,8 @@ Each rule here comes from a real error, or prevents one. Add a rule after each n
 - Never install a new dependency without approval.
 - Never edit `main.js`. It is the esbuild bundle of `src/`. Edit the source, then build.
 - Never import a Node builtin in `src/`. The manifest declares `isDesktopOnly: false`, and Obsidian mobile has no Node.
-- Never use `app.internalPlugins` or `app.plugins` outside `GraphOptionsAdapter`. Everything else is on documented API. To know whether a plugin is on, read `core-plugins.json` or `community-plugins.json` through `adapters/obsidian/pluginState.ts`. The graph exception is in the deviations table.
-- Never write `.obsidian/workspaces.json` outside `DirectWorkspacesAdapter`. It is the only writer, and the format rules live in `core/domain/workspaceFile.ts`.
+- Never use `app.internalPlugins` or `app.plugins` outside `GraphOptionsAdapter`. Everything else is on documented API. To know whether a plugin is on, read `core-plugins.json` or `community-plugins.json` through `src/obsidian/plugins/pluginState.ts`. The graph exception is in the deviations table.
+- Never write `.obsidian/workspaces.json` outside `DirectWorkspacesAdapter`. It is the only writer, and the format rules live in `core/workspaces/workspaceFile.ts`.
 - Never change how that file is serialized without running the round-trip test. A format drift gives every synced vault a spurious diff.
 - Never write the file while the core Workspaces plugin is on. Both write it, and the loser's workspaces disappear with no message.
 - Never call `getLayout` before `onLayoutReady`. A half-built workspace captures panes that are not there yet.
@@ -38,7 +38,7 @@ This plugin replaces Obsidian's core Workspaces plugin, which must be turned off
 the same `.obsidian/workspaces.json` in the same format. It has no runtime dependencies. It uses
 documented API everywhere except `GraphOptionsAdapter`, which reaches the core graph plugin. See the
 deviations table.
-`src/core/domain/migrations.ts` migrates the persisted metadata schema. It runs on every load.
+`src/core/storage/migrations.ts` migrates the persisted metadata schema. It runs on every load.
 
 ## Commands
 
@@ -90,15 +90,15 @@ Keep the `?? defaultMeta()` and `if (!meta) return` guards.
 
 ## Conventions
 
-| Topic                  | Decision                                                                                                                                                                                                                                  | Snippet or `file:line`               |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| File and folder layout | `src/core/` policy, `src/adapters/` Obsidian detail, `src/ui/` modals and settings. Entry point is `src/main.ts`, the composition root.                                                                                                   | `src/main.ts:1`                      |
-| Naming                 | PascalCase file name when the file exports one class. camelCase for a module of functions. Types PascalCase, constants SCREAMING_SNAKE. `main.ts` stays camelCase because Obsidian requires that entry point name.                        | `src/core/WorkspaceRegistry.ts`      |
-| Error handling         | Throw `WorkspaceError` with a `WorkspaceErrorKind`. Convert to text with `userMessage()` at the UI edge only. Every kind maps to a sentence the user can act on.                                                                          | `src/core/errors.ts:10`              |
-| Logging                | No logger and no log levels. A failure the user must see becomes `new Notice(userMessage(err))`. A failure a developer must debug becomes one `console.error` prefixed `[workspace-organizer]`, in `attempt()` only.                      | `src/main.ts` `attempt`              |
-| Untrusted input        | Core's layout tree and our own `data.json` are both untrusted. Treat an unknown shape as absent, never as a crash.                                                                                                                        | `src/core/domain/layoutSummary.ts`   |
-| Test layout            | `*.test.ts` beside the file it tests. Vitest. `vitest.config.ts` aliases `obsidian` to `test/obsidian-stub.ts`, so only Obsidian-free logic is testable. Test what fails quietly: reconciliation, tag parsing, layout summaries, renames. | `src/core/WorkspaceRegistry.test.ts` |
-| Commit format          | Conventional Commits: `type(scope): subject`, for example `feat(switcher): filter by tag`. Version control is not initialized here, so no history confirms this.                                                                          | none yet                             |
+| Topic                  | Decision                                                                                                                                                                                                                                                                                     | Snippet or `file:line`                        |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| File and folder layout | Layer first, then feature: `src/core/<feature>/` policy, `src/obsidian/<feature>/` Obsidian detail, `src/ui/<feature>/` views. Each feature exposes its API in `index.ts`. Other features import only that file. `src/main.ts` is wiring only.                                               | `src/main.ts:1`                               |
+| Naming                 | PascalCase file name when the file exports one class. camelCase for a module of functions. Types PascalCase, constants SCREAMING_SNAKE. `main.ts` stays camelCase because Obsidian requires that entry point name.                                                                           | `src/core/workspaces/WorkspaceRegistry.ts`    |
+| Error handling         | Throw `WorkspaceError` with a `WorkspaceErrorKind`. Convert to text with `userMessage()` at the UI edge only. Every kind maps to a sentence the user can act on.                                                                                                                             | `src/core/shared/errors.ts`                   |
+| Logging                | No logger and no log levels. A failure the user must see becomes `new Notice(userMessage(err))`. A failure a developer must debug becomes one `console.error` prefixed `[workspace-organizer]`, in `attempt()` only.                                                                         | `src/ui/shared/attempt.ts`                    |
+| Untrusted input        | Core's layout tree and our own `data.json` are both untrusted. Treat an unknown shape as absent, never as a crash.                                                                                                                                                                           | `src/core/layout/layoutSummary.ts`            |
+| Test layout            | `*.test.ts` beside the file it tests. Vitest. `vitest.config.ts` aliases `obsidian` to `test/obsidian-stub.ts`, so only Obsidian-free logic is testable. Test what fails quietly: reconciliation, tag parsing, layout summaries, renames. Test a use case with in-memory fakes of the ports. | `src/core/switching/WorkspaceService.test.ts` |
+| Commit format          | Conventional Commits: `type(scope): subject`, for example `feat(switcher): filter by tag`. Version control is not initialized here, so no history confirms this.                                                                                                                             | none yet                                      |
 
 ## Design
 
@@ -106,8 +106,9 @@ Policy is the business rule. Detail is the Obsidian API, the file system, and th
 
 - The policy layer must not import a detail. The detail layer imports the policy layer.
 - Declare each interface in the policy layer. Implement it in the detail layer.
-- `src/core/**` must not import `obsidian`. `eslint.config.js` enforces this, and a type-only import is still a leak.
-- The format of `workspaces.json` is policy, not detail. It lives in `core/domain/workspaceFile.ts`
+- `src/core/**` must not import `obsidian`, `src/obsidian/**`, or `src/ui/**`. `src/obsidian/**` must not import `src/ui/**`. `src/ui/**` must not import `src/obsidian/**`. It gets adapters from `main.ts`. `eslint.config.js` enforces each rule, and a type-only import is still a leak.
+- Put a use case in `core/switching/WorkspaceService`, not in `main.ts` or in a view.
+- The format of `workspaces.json` is policy, not detail. It lives in `core/workspaces/workspaceFile.ts`
   and is tested against a real core-written file. `DirectWorkspacesAdapter` only does the file access.
 - Add an interface only at a policy boundary, or when a second real implementation exists.
   `MetaStore` has two: `SidecarStore` and `EmbeddedStore`.
@@ -124,7 +125,7 @@ Two modes, chosen in settings, both behind `MetaStore`:
   not preserve a key it does not recognize.
 
 The file can change under us: another device can sync it, and a user can edit it by hand. Do not add a
-watcher. Call `plugin.reload()` before showing a list instead. It re-reads the file, re-checks the core
+watcher. Call `WorkspaceActions.reload()` before showing a list instead. It re-reads the file, re-checks the core
 plugin state, and re-derives metadata, and it is cheap.
 
 ## Graph ownership
@@ -133,7 +134,7 @@ Obsidian keeps one global set of graph settings, so a saved layout carries none 
 can store them per workspace, but it applies them globally, which is one set for every graph pane.
 Plugins built for the graph do it per pane and do it better.
 
-`core/domain/graphOwners.ts` decides who wins. It is pure and takes the enabled plugin list as an
+`core/graph/graphOwners.ts` decides who wins. It is pure and takes the enabled plugin list as an
 argument, so it is tested without Obsidian. The `graphSettings` setting has three modes: `auto`
 stands aside when a plugin in `GRAPH_OWNERS` is enabled, `always` and `never` are the explicit
 overrides.
@@ -142,9 +143,8 @@ Keep the overrides. `GRAPH_OWNERS` can never list every graph plugin, so auto is
 the explicit modes are the real answer for anything it misses. Adding an id to that list is a fine
 change; making auto the only mode is not.
 
-Obsidian fires no documented event when a plugin is turned on or off, so the enabled list is read
-again in `refreshGraphMode` on every reload and at the top of `attempt()`, never cached across a
-session and never watched.
+Obsidian fires no documented event when a plugin is turned on or off, so `WorkspaceService.graphMode()`
+reads the enabled list again in each use case. It is not cached and not watched.
 
 ## Comments
 
@@ -169,8 +169,7 @@ session and never watched.
 
 ## Deviations
 
-| Date       | Rule                            | Location                                       | Reason                                                                                                                                                                                                                   | Removal plan                                                                                                                                                                                       |
-| ---------- | ------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-08-20 | Strictest compiler mode         | `tsconfig.json` `include: ["src/**/*.ts"]`     | `test/obsidian-stub.ts`, `vitest.config.ts`, `eslint.config.js`, and `esbuild.config.mjs` are outside the type check. The build only needs `src/`.                                                                       | Add a second `tsconfig` that covers the test and config files.                                                                                                                                     |
-| 2026-08-20 | Linter size limits              | `eslint.config.js`, `SettingsTab.ts`           | An Obsidian settings screen is one declarative builder chain per section. Splitting it to meet a line budget hurts reading.                                                                                              | Remove the exception if the tab is split into separate section files.                                                                                                                              |
-| 2026-08-24 | Never use `app.internalPlugins` | `src/adapters/obsidian/GraphOptionsAdapter.ts` | The global graph view has no view state, so a saved layout can carry nothing about the graph. The documented route writes `graph.json` and waits for a 50 ms debounced watcher to reread it, which races `changeLayout`. | Remove when Obsidian gives the graph view a real view state, or a documented API for the core graph options. Already skipped entirely when `graphSettings` resolves inactive, see Graph ownership. |
+| Date       | Rule                            | Location                                    | Reason                                                                                                                                                                                                                   | Removal plan                                                                                                                                                                                       |
+| ---------- | ------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-20 | Strictest compiler mode         | `tsconfig.json` `include: ["src/**/*.ts"]`  | `test/obsidian-stub.ts`, `vitest.config.ts`, `eslint.config.js`, and `esbuild.config.mjs` are outside the type check. The build only needs `src/`.                                                                       | Add a second `tsconfig` that covers the test and config files.                                                                                                                                     |
+| 2026-08-24 | Never use `app.internalPlugins` | `src/obsidian/graph/GraphOptionsAdapter.ts` | The global graph view has no view state, so a saved layout can carry nothing about the graph. The documented route writes `graph.json` and waits for a 50 ms debounced watcher to reread it, which races `changeLayout`. | Remove when Obsidian gives the graph view a real view state, or a documented API for the core graph options. Already skipped entirely when `graphSettings` resolves inactive, see Graph ownership. |
