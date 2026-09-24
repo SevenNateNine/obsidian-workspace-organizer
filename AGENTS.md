@@ -28,11 +28,11 @@ The user can override these steps for one session.
 
 ## Stack
 
-| Field                | Value                                                                       |
-| -------------------- | --------------------------------------------------------------------------- |
-| Language and version | TypeScript 5.7, `target` ES2018                                             |
-| Framework            | Obsidian plugin API 1.13 (`minAppVersion` 1.4.0), bundled by esbuild to CJS |
-| Package manager      | npm (`package-lock.json`, npm 10, Node 24)                                  |
+| Field                | Value                                                                        |
+| -------------------- | ---------------------------------------------------------------------------- |
+| Language and version | TypeScript 5.7, `target` ES2018                                              |
+| Framework            | Obsidian plugin API 1.13 (`minAppVersion` 1.4.10), bundled by esbuild to CJS |
+| Package manager      | npm (`package-lock.json`, npm 10, Node 24)                                   |
 
 This plugin replaces Obsidian's core Workspaces plugin, which must be turned off. It reads and writes
 the same `.obsidian/workspaces.json` in the same format. It has no runtime dependencies. It uses
