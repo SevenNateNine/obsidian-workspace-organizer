@@ -2,7 +2,7 @@
 	"id": "workspace-organizer",
 	"name": "Workspace Organizer",
 	"version": "0.1.0",
-	"minAppVersion": "1.4.0",
+	"minAppVersion": "1.4.10",
 	"description": "Tag, archive, reorder, and search your workspaces. Replaces core Workspaces without changing its file.",
 	"author": "Nathaniel Chan",
 	"authorUrl": "https://github.com/SevenNateNine",

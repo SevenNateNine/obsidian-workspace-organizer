@@ -1,40 +1,56 @@
-import { setIcon } from "obsidian";
+import { AbstractInputSuggest, setIcon, type App } from "obsidian";
 import { dedupe, normalizeTag, suggestTags, type TagCount } from "../../core/organize";
 
+class TagSuggest extends AbstractInputSuggest<string> {
+	constructor(
+		app: App,
+		input: HTMLInputElement,
+		private readonly known: readonly TagCount[],
+		private readonly chosen: () => readonly string[],
+	) {
+		super(app, input);
+	}
+
+	/** Nothing until the user types, so Enter in an empty box does not add a tag. */
+	protected getSuggestions(query: string): string[] {
+		if (!normalizeTag(query)) return [];
+		return suggestTags(query, this.known, this.chosen());
+	}
+
+	renderSuggestion(tag: string, el: HTMLElement): void {
+		el.setText(`#${tag}`);
+	}
+}
+
 /**
- * Chips and a text box, like the tags property in Obsidian. Obsidian offers
- * `AbstractInputSuggest` only from 1.4.10, and this plugin supports 1.4.0.
- *
- * Enter picks the highlighted suggestion. A comma adds the typed text as it is,
- * so a new tag that looks like a known one can still be created.
+ * Chips and a text box, like the tags property in Obsidian. Enter picks the
+ * highlighted suggestion. A comma adds the typed text as it is, so a new tag that
+ * looks like a known one can still be created.
  */
 export class TagPicker {
 	private tags: readonly string[];
-	/** -1 is none. With an empty box, Enter adds nothing until the arrow keys choose a tag. */
-	private highlighted = -1;
 	private readonly fieldEl: HTMLElement;
 	private readonly input: HTMLInputElement;
-	private readonly suggestionsEl: HTMLElement;
+	private readonly suggest: TagSuggest;
 
 	constructor(
+		app: App,
 		parent: HTMLElement,
 		initial: readonly string[],
 		private readonly known: readonly TagCount[],
 	) {
 		this.tags = [...initial];
-		const root = parent.createDiv({ cls: "ew-tag-picker" });
-		this.fieldEl = root.createDiv({ cls: "ew-tag-picker-field" });
+		this.fieldEl = parent.createDiv({ cls: "ew-tag-picker-field" });
 		this.input = createEl("input", {
 			type: "text",
 			cls: "ew-tag-picker-input",
 			attr: { placeholder: "Add a tag", "aria-label": "Add a tag" },
 		});
-		this.suggestionsEl = root.createDiv({ cls: "ew-tag-suggestions" });
+
+		this.suggest = new TagSuggest(app, this.input, known, () => this.tags);
+		this.suggest.onSelect((tag) => this.add(tag));
 
 		this.fieldEl.addEventListener("click", () => this.input.focus());
-		this.input.addEventListener("input", () => this.showSuggestions());
-		this.input.addEventListener("focus", () => this.showSuggestions());
-		this.input.addEventListener("blur", () => this.suggestionsEl.empty());
 		this.input.addEventListener("keydown", (event) => this.onKey(event));
 		this.renderChips();
 	}
@@ -45,66 +61,39 @@ export class TagPicker {
 		return pending ? dedupe([...this.tags, pending]) : this.tags;
 	}
 
+	/** When suggestions show, Enter belongs to `TagSuggest`. */
 	private onKey(event: KeyboardEvent): void {
-		const suggestions = this.currentSuggestions();
+		const typed = this.input.value;
+		const hasSuggestions =
+			normalizeTag(typed) !== "" &&
+			suggestTags(typed, this.known, this.tags).length > 0;
 
-		switch (event.key) {
-			case "ArrowDown":
-			case "ArrowUp":
-				event.preventDefault();
-				this.moveHighlight(event.key === "ArrowDown" ? 1 : -1, suggestions);
-				return;
-			case "Enter":
-				event.preventDefault();
-				this.add(suggestions[this.highlighted] ?? this.input.value);
-				return;
-			case ",":
-				event.preventDefault();
-				this.add(this.input.value);
-				return;
-			case "Backspace":
-				if (!this.input.value) this.remove(this.tags[this.tags.length - 1]);
-				return;
+		if (event.key === ",") {
+			event.preventDefault();
+			this.add(typed);
+		} else if (event.key === "Enter" && !hasSuggestions) {
+			event.preventDefault();
+			this.add(typed);
+		} else if (event.key === "Backspace" && !typed) {
+			this.remove(this.tags[this.tags.length - 1]);
 		}
-	}
-
-	private moveHighlight(step: number, suggestions: readonly string[]): void {
-		const count = Math.max(suggestions.length, 1);
-		this.highlighted =
-			this.highlighted < 0
-				? step > 0
-					? 0
-					: count - 1
-				: (this.highlighted + step + count) % count;
-		this.renderSuggestions(suggestions);
 	}
 
 	private add(raw: string): void {
 		const tag = normalizeTag(raw);
-		this.input.value = "";
+		this.suggest.setValue("");
+		this.suggest.close();
 		if (tag) this.update(dedupe([...this.tags, tag]));
-		this.showSuggestions();
 	}
 
 	private remove(tag: string | undefined): void {
-		if (tag === undefined) return;
-		this.update(this.tags.filter((kept) => kept !== tag));
-		this.showSuggestions();
+		if (tag !== undefined) this.update(this.tags.filter((kept) => kept !== tag));
 	}
 
 	private update(tags: readonly string[]): void {
 		this.tags = tags;
 		this.renderChips();
 		this.input.focus();
-	}
-
-	private currentSuggestions(): string[] {
-		return suggestTags(this.input.value, this.known, this.tags);
-	}
-
-	private showSuggestions(): void {
-		this.highlighted = this.input.value ? 0 : -1;
-		this.renderSuggestions(this.currentSuggestions());
 	}
 
 	private renderChips(): void {
@@ -122,23 +111,5 @@ export class TagPicker {
 			});
 		}
 		this.fieldEl.appendChild(this.input);
-	}
-
-	private renderSuggestions(suggestions: readonly string[]): void {
-		this.suggestionsEl.empty();
-		if (this.input.ownerDocument.activeElement !== this.input) return;
-
-		suggestions.forEach((tag, index) => {
-			const item = this.suggestionsEl.createDiv({
-				cls: "ew-tag-suggestion",
-				text: `#${tag}`,
-			});
-			item.toggleClass("is-selected", index === this.highlighted);
-			// Mousedown, not click: a click would blur the input and close the list first.
-			item.addEventListener("mousedown", (event) => {
-				event.preventDefault();
-				this.add(tag);
-			});
-		});
 	}
 }

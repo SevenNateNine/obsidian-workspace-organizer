@@ -56,6 +56,7 @@ export class WorkspaceEditModal extends Modal {
 			"Type to see tags you already use. Press Enter to pick one.",
 		);
 		this.tagPicker = new TagPicker(
+			this.app,
 			this.contentEl,
 			this.opts.meta.tags,
 			this.opts.knownTags,
