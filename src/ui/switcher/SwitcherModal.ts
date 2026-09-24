@@ -1,5 +1,5 @@
 import { App, FuzzySuggestModal, type FuzzyMatch } from "obsidian";
-import { countTags, parseQuery } from "../../core/organize";
+import { countTags, parseQuery, sameTag } from "../../core/organize";
 import type { WorkspaceEntry, WorkspaceRegistry } from "../../core/workspaces";
 import { describe } from "./describe";
 
@@ -95,7 +95,7 @@ export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 		for (const { tag, count } of countTags(all.map((entry) => entry.meta))) {
 			const chip = bar.createSpan({ cls: "ew-chip", text: `#${tag}` });
 			chip.createSpan({ cls: "ew-chip-count", text: String(count) });
-			if (this.chosenTags.includes(tag)) chip.addClass("is-active");
+			if (this.isChosen(tag)) chip.addClass("is-active");
 			chip.addEventListener("click", () => this.toggleTag(tag));
 		}
 
@@ -114,9 +114,13 @@ export class SwitcherModal extends FuzzySuggestModal<WorkspaceEntry> {
 		bar.toggleClass("is-empty", bar.childElementCount === 0);
 	}
 
+	private isChosen(tag: string): boolean {
+		return this.chosenTags.some((chosen) => sameTag(chosen, tag));
+	}
+
 	private toggleTag(tag: string): void {
-		this.chosenTags = this.chosenTags.includes(tag)
-			? this.chosenTags.filter((chosen) => chosen !== tag)
+		this.chosenTags = this.isChosen(tag)
+			? this.chosenTags.filter((chosen) => !sameTag(chosen, tag))
 			: [...this.chosenTags, tag];
 		this.refresh();
 	}

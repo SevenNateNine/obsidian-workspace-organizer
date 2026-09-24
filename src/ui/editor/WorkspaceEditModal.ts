@@ -53,7 +53,7 @@ export class WorkspaceEditModal extends Modal {
 
 		this.stackedHeading(
 			"Tags",
-			"Type to see tags you already use. Press Enter to pick one.",
+			"Type to see the tags in your vault. Press Enter, Space, or a comma to add a tag. Click a tag to edit it.",
 		);
 		this.tagPicker = new TagPicker(
 			this.app,

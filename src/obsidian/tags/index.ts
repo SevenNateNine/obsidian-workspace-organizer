@@ -1,0 +1,1 @@
+export { vaultTagCounts } from "./vaultTags";

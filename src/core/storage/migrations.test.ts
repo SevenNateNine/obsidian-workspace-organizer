@@ -82,9 +82,16 @@ describe("migrateData settings", () => {
 			workspaces: { Draft: { tags: ["#Writing", "writing", 7], archived: "yes" } },
 		});
 
-		expect(data.workspaces.Draft?.tags).toEqual(["writing"]);
+		// Case is kept, and case variants are one tag.
+		expect(data.workspaces.Draft?.tags).toEqual(["Writing"]);
 		// "yes" is not a boolean, so the safe default wins.
 		expect(data.workspaces.Draft?.archived).toBe(false);
+	});
+
+	// Older builds allowed tags that Obsidian rejects. Dropping them would lose data.
+	it("keeps a stored tag that the current rules reject", () => {
+		const data = migrateData({ workspaces: { Draft: { tags: ["c++", "v1.2"] } } });
+		expect(data.workspaces.Draft?.tags).toEqual(["c++", "v1.2"]);
 	});
 });
 

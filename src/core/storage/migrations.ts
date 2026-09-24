@@ -2,7 +2,7 @@ import {
 	SUBTITLES,
 	dedupe,
 	defaultMeta,
-	normalizeTag,
+	storedTag,
 	type WorkspaceMeta,
 } from "../organize";
 import {
@@ -98,7 +98,7 @@ function normalizeTags(raw: unknown): string[] {
 	return dedupe(
 		raw
 			.filter((tag): tag is string => typeof tag === "string")
-			.map(normalizeTag)
+			.map(storedTag)
 			.filter(Boolean),
 	);
 }

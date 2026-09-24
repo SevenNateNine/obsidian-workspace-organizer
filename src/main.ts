@@ -1,6 +1,7 @@
 import { Plugin } from "obsidian";
 import { WorkspaceService } from "./core/switching";
 import { EmbeddedStore, SidecarStore, loadPluginData } from "./obsidian/storage";
+import { vaultTagCounts } from "./obsidian/tags";
 import { DirectWorkspacesAdapter } from "./obsidian/workspaces";
 import { WorkspaceActions, registerCommands, statusBarHandlers } from "./ui/commands";
 import { SettingsTab } from "./ui/settings";
@@ -47,7 +48,12 @@ async function buildContext(plugin: Plugin): Promise<Context> {
 		settings: () => service.settings.statusBar,
 		activeName: () => service.registry.activeName(),
 	});
-	const actions = new WorkspaceActions(app, service, () => statusBar.render());
+	const actions = new WorkspaceActions(
+		app,
+		service,
+		() => statusBar.render(),
+		() => vaultTagCounts(app),
+	);
 
 	return { service, actions, statusBar };
 }

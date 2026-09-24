@@ -1,5 +1,5 @@
 import { App, Notice } from "obsidian";
-import { countTags } from "../../core/organize";
+import { countTags, mergeTagCounts, type TagCount } from "../../core/organize";
 import type { PluginSettings, StorageMode } from "../../core/settings";
 import type { WorkspaceService } from "../../core/switching";
 import { WorkspaceEditModal } from "../editor";
@@ -21,6 +21,8 @@ export class WorkspaceActions {
 		private readonly app: App,
 		private readonly service: WorkspaceService,
 		private readonly afterChange: After,
+		/** Tags used in notes. The UI cannot read the vault itself. */
+		private readonly vaultTags: () => readonly TagCount[],
 	) {}
 
 	async run(action: () => Promise<void>): Promise<void> {
@@ -160,7 +162,10 @@ export class WorkspaceActions {
 			meta,
 			layout: this.service.registry.layoutOf(name),
 			previewNameCount: this.service.settings.previewNameCount,
-			knownTags: countTags(this.service.registry.entries().map((entry) => entry.meta)),
+			knownTags: mergeTagCounts([
+				countTags(this.service.registry.entries().map((entry) => entry.meta)),
+				this.vaultTags(),
+			]),
 			onSave: (edit) => this.mutate(() => this.service.edit(name, edit), after),
 		}).open();
 	}

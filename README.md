@@ -22,15 +22,15 @@ plugin is on, and it shows a notice.
 
 ## Organize
 
-| Feature        | What it does                                                                                                                                         |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tags           | Group your workspaces. Filter the switcher by tag. When you type a tag, the plugin suggests the tags that you already use.                           |
-| Archive        | Hide a workspace from the switcher, but keep it. An archived workspace stays in the manager.                                                         |
-| Order          | Put the list in your own order. Next and previous use this order and skip archived workspaces.                                                       |
-| Descriptions   | Write a note about the purpose of a workspace. For each workspace, select what shows under its name: the description or the generated preview.       |
-| Switcher       | Fuzzy search on names, tags, and descriptions. Type `#tag` to filter by a tag.                                                                       |
-| Layout preview | A workspace with no description shows a generated summary: `5 tabs, 2 splits · Chapter 1, Outline, +3`.                                              |
-| Manager        | In the plugin settings. Drag the handle to reorder. The pencil edits the name, tags, and description. The ⋮ menu has duplicate, archive, and delete. |
+| Feature        | What it does                                                                                                                                                                                                                                 |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tags           | Group your workspaces. The tag field works like the tags property of a note, and it suggests the tags of your notes and workspaces. Tags follow the Obsidian rules: case does not matter, and nested tags such as `work/client` are allowed. |
+| Archive        | Hide a workspace from the switcher, but keep it. An archived workspace stays in the manager.                                                                                                                                                 |
+| Order          | Put the list in your own order. Next and previous use this order and skip archived workspaces.                                                                                                                                               |
+| Descriptions   | Write a note about the purpose of a workspace. For each workspace, select what shows under its name: the description or the generated preview.                                                                                               |
+| Switcher       | Fuzzy search on names, tags, and descriptions. Type `#tag` to filter by a tag. A filter on `#work` also shows `#work/client`.                                                                                                                |
+| Layout preview | A workspace with no description shows a generated summary: `5 tabs, 2 splits · Chapter 1, Outline, +3`.                                                                                                                                      |
+| Manager        | In the plugin settings. Drag the handle to reorder. The pencil edits the name, tags, and description. The ⋮ menu has duplicate, archive, and delete.                                                                                         |
 
 ## Other features
 

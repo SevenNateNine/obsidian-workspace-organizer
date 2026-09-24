@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
 	countTags,
+	dedupe,
 	hasAllTags,
+	mergeTagCounts,
 	normalizeTag,
 	parseQuery,
 	parseTags,
+	sameTag,
+	storedTag,
 	suggestTags,
 } from "./tags";
 
@@ -31,12 +35,16 @@ describe("suggestTags", () => {
 		expect(suggestTags("dw", known, [])).toEqual(["deep-work"]);
 	});
 
-	it("normalizes the query", () => {
-		expect(suggestTags("#Deep Work", known, [])).toEqual(["deep-work"]);
+	it("ignores a leading hash and the case of the query", () => {
+		expect(suggestTags("#Deep-W", known, [])).toEqual(["deep-work"]);
 	});
 
-	it("leaves out tags that are already chosen", () => {
-		expect(suggestTags("w", known, ["writing", "web"])).toEqual([
+	it("keeps the stored spelling of a suggestion", () => {
+		expect(suggestTags("pro", [{ tag: "Project", count: 1 }], [])).toEqual(["Project"]);
+	});
+
+	it("leaves out tags that are already chosen, in any case", () => {
+		expect(suggestTags("w", known, ["Writing", "web"])).toEqual([
 			"deep-work",
 			"rewrite",
 		]);
@@ -48,27 +56,54 @@ describe("suggestTags", () => {
 });
 
 describe("normalizeTag", () => {
-	it("strips a leading hash and lower cases", () => {
-		expect(normalizeTag("#Writing")).toBe("writing");
+	it("strips a leading hash and keeps the case", () => {
+		expect(normalizeTag("  #Writing ")).toBe("Writing");
 	});
 
-	it("collapses inner whitespace to a hyphen", () => {
-		expect(normalizeTag("  deep   work ")).toBe("deep-work");
+	it("accepts nested tags, other scripts, and emoji", () => {
+		expect(normalizeTag("work/client-a")).toBe("work/client-a");
+		expect(normalizeTag("日本語")).toBe("日本語");
+		expect(normalizeTag("idea_💡")).toBe("idea_💡");
+		expect(normalizeTag("y1984")).toBe("y1984");
 	});
 
-	it("returns empty for a tag that is only punctuation", () => {
+	// Obsidian does not treat these as tags, so a workspace must not get them.
+	it("rejects what Obsidian rejects", () => {
+		for (const bad of ["deep work", "v1.2", "c++", "a,b", "1984", "a//b", "/a", "a/"]) {
+			expect(normalizeTag(bad)).toBe("");
+		}
+	});
+
+	it("returns empty for no text", () => {
 		expect(normalizeTag("#")).toBe("");
 		expect(normalizeTag("   ")).toBe("");
 	});
 });
 
-describe("parseTags", () => {
-	it("accepts commas, spaces, and hashes together", () => {
-		expect(parseTags("#dev, writing  #Focus")).toEqual(["dev", "writing", "focus"]);
+describe("storedTag", () => {
+	it("only trims and strips the hash", () => {
+		expect(storedTag(" #c++ ")).toBe("c++");
+	});
+});
+
+describe("sameTag and dedupe", () => {
+	it("ignore case", () => {
+		expect(sameTag("Work", "work")).toBe(true);
+		expect(sameTag("work", "work/a")).toBe(false);
 	});
 
-	it("drops duplicates and empties", () => {
-		expect(parseTags("dev,,dev, #dev")).toEqual(["dev"]);
+	it("keep the first spelling", () => {
+		expect(dedupe(["Work", "work", "WORK", "home"])).toEqual(["Work", "home"]);
+	});
+});
+
+describe("parseTags", () => {
+	it("accepts commas, spaces, and hashes together", () => {
+		expect(parseTags("#dev, writing  #Focus")).toEqual(["dev", "writing", "Focus"]);
+	});
+
+	it("drops duplicates, empties, and invalid tags", () => {
+		expect(parseTags("dev,,Dev, #dev v1.2")).toEqual(["dev"]);
 	});
 
 	it("returns nothing for empty input", () => {
@@ -105,6 +140,17 @@ describe("hasAllTags", () => {
 	it("matches everything when nothing is selected", () => {
 		expect(hasAllTags([], [])).toBe(true);
 	});
+
+	it("ignores case", () => {
+		expect(hasAllTags(["Dev"], ["dev"])).toBe(true);
+	});
+
+	// As in Obsidian's tag search: "#work" finds "#work/client".
+	it("matches a parent to its nested tags, not the reverse", () => {
+		expect(hasAllTags(["work/client"], ["work"])).toBe(true);
+		expect(hasAllTags(["work"], ["work/client"])).toBe(false);
+		expect(hasAllTags(["workshop"], ["work"])).toBe(false);
+	});
 });
 
 describe("countTags", () => {
@@ -122,7 +168,28 @@ describe("countTags", () => {
 		]);
 	});
 
-	it("counts a repeated tag on one workspace once", () => {
-		expect(countTags([{ tags: ["dev", "dev"] }])).toEqual([{ tag: "dev", count: 1 }]);
+	it("counts a repeated tag on one item once, in any case", () => {
+		expect(countTags([{ tags: ["dev", "Dev"] }])).toEqual([{ tag: "dev", count: 1 }]);
+	});
+
+	it("merges case variants under the first spelling", () => {
+		expect(countTags([{ tags: ["Dev"] }, { tags: ["dev"] }])).toEqual([
+			{ tag: "Dev", count: 2 },
+		]);
+	});
+});
+
+describe("mergeTagCounts", () => {
+	it("adds the counts of the same tag from each list", () => {
+		const workspaces = [{ tag: "dev", count: 2 }];
+		const notes = [
+			{ tag: "Dev", count: 5 },
+			{ tag: "reading", count: 9 },
+		];
+
+		expect(mergeTagCounts([workspaces, notes])).toEqual([
+			{ tag: "reading", count: 9 },
+			{ tag: "dev", count: 7 },
+		]);
 	});
 });

@@ -129,52 +129,53 @@
 	margin-bottom: var(--size-4-3);
 }
 
-.ew-tag-picker-field {
-	margin-bottom: var(--size-4-3);
+/*
+ * The tag field uses Obsidian's multi-select classes. The container is an
+ * inline field in the Properties table, so here it takes the full width.
+ */
+.ew-tag-picker {
 	display: flex;
-	flex-wrap: wrap;
 	align-items: center;
-	gap: var(--size-2-2);
-	padding: var(--size-2-2) var(--size-4-2);
-	border: var(--input-border-width, 1px) solid var(--background-modifier-border);
-	border-radius: var(--input-radius, var(--radius-s));
-	background-color: var(--background-modifier-form-field);
-	cursor: text;
+	margin-bottom: var(--size-4-3);
 }
 
-.ew-tag-picker-field:focus-within {
-	border-color: var(--interactive-accent);
+/* The field itself is not focused, the text inside it is. */
+.ew-tag-picker:focus-within {
+	border-color: var(--background-modifier-border-focus);
+	box-shadow: 0 0 0 var(--input-border-width-focus)
+		var(--background-modifier-border-focus);
 }
 
-.ew-tag-picker-input.ew-tag-picker-input {
+.ew-tag-picker .multi-select-input {
 	flex: 1;
-	min-width: 8em;
-	padding: 0;
-	border: none;
-	background: transparent;
-	box-shadow: none;
+	max-width: none;
+	outline: none;
 }
 
-.ew-tag-chip {
-	display: inline-flex;
-	align-items: center;
-	gap: var(--size-2-1);
-	padding: 0 var(--size-2-2);
-	border-radius: var(--tag-radius, var(--radius-s));
-	background-color: var(--tag-background, var(--background-modifier-hover));
-	color: var(--tag-color, var(--text-accent));
-	font-size: var(--font-smaller);
+.ew-tag-picker .multi-select-input.is-invalid {
+	color: var(--text-error);
 }
 
-.ew-tag-chip-remove {
-	display: inline-flex;
-	color: var(--text-muted);
-	cursor: pointer;
-	--icon-size: var(--icon-xs);
-}
-
-.ew-tag-chip-remove:hover {
-	color: var(--text-normal);
+/* Copied from the tags property, which scopes these to .metadata-property-value. */
+.ew-tag-picker .multi-select-pill {
+	--pill-color: var(--tag-color);
+	--pill-color-hover: var(--tag-color-hover);
+	--pill-color-remove: var(--tag-color);
+	--pill-color-remove-hover: var(--tag-color-hover);
+	--pill-decoration: var(--tag-decoration);
+	--pill-decoration-hover: var(--tag-decoration-hover);
+	--pill-background: var(--tag-background);
+	--pill-background-hover: var(--tag-background-hover);
+	--pill-border-color: var(--tag-border-color);
+	--pill-border-color-hover: var(--tag-border-color-hover);
+	--pill-border-width: var(--tag-border-width);
+	--pill-padding-x: var(--tag-padding-x);
+	--pill-padding-y: var(--tag-padding-y);
+	--pill-radius: var(--tag-radius);
+	--pill-weight: var(--tag-weight);
+	--pill-focus-width: 100%;
+	--pill-focus-left-adjust: 0;
+	line-height: 1;
 }
 
 .ew-warning {
