@@ -354,3 +354,39 @@ describe("updateSettings", () => {
 		expect(h.data.current().workspaces).toHaveProperty("A");
 	});
 });
+
+describe("edit", () => {
+	it("renames, then saves tags and description under the new name", async () => {
+		const h = await harness();
+		await withWorkspaces(h, "A");
+
+		await h.service.edit("A", { name: " B ", tags: ["x"], description: "d" });
+
+		expect(h.service.registry.metaOf("A")).toBeNull();
+		expect(h.service.registry.metaOf("B")).toMatchObject({
+			tags: ["x"],
+			description: "d",
+		});
+		expect(h.workspaces.list()).toEqual(["B"]);
+	});
+
+	it("skips the rename when the name is the same", async () => {
+		const h = await harness();
+		await withWorkspaces(h, "A");
+		h.workspaces.writable = false;
+
+		await h.service.edit("A", { name: "A", tags: ["x"], description: "" });
+
+		expect(h.service.registry.metaOf("A")?.tags).toEqual(["x"]);
+	});
+
+	it("changes nothing when the new name is taken", async () => {
+		const h = await harness();
+		await withWorkspaces(h, "A", "B");
+
+		await expect(
+			h.service.edit("A", { name: "B", tags: ["x"], description: "" }),
+		).rejects.toMatchObject({ kind: "name-taken" });
+		expect(h.service.registry.metaOf("A")?.tags).toEqual([]);
+	});
+});

@@ -1,16 +1,18 @@
 import { App, Modal, Setting } from "obsidian";
 import { formatSummary, summarizeLayout } from "../../core/layout";
-import { parseTags, type EditableMeta, type WorkspaceMeta } from "../../core/organize";
+import { parseTags, type WorkspaceMeta } from "../../core/organize";
+import type { WorkspaceEdit } from "../../core/switching";
 
 export interface EditOptions {
 	readonly name: string;
 	readonly meta: WorkspaceMeta;
 	readonly layout: unknown;
 	readonly previewNameCount: number;
-	readonly onSave: (patch: EditableMeta) => void;
+	readonly onSave: (edit: WorkspaceEdit) => void;
 }
 
 export class WorkspaceEditModal extends Modal {
+	private name: string;
 	private tags: readonly string[];
 	private description: string;
 
@@ -19,12 +21,13 @@ export class WorkspaceEditModal extends Modal {
 		private readonly opts: EditOptions,
 	) {
 		super(app);
+		this.name = opts.name;
 		this.tags = [...opts.meta.tags];
 		this.description = opts.meta.description;
 	}
 
 	override onOpen(): void {
-		this.titleEl.setText(this.opts.name);
+		this.titleEl.setText(`Edit "${this.opts.name}"`);
 
 		// Shows what a description replaces, before the user saves one.
 		const preview = formatSummary(
@@ -32,6 +35,13 @@ export class WorkspaceEditModal extends Modal {
 			this.opts.previewNameCount,
 		);
 		this.contentEl.createEl("p", { cls: "ew-preview", text: preview });
+
+		new Setting(this.contentEl).setName("Name").addText((text) =>
+			text
+				.setPlaceholder("Workspace name")
+				.setValue(this.name)
+				.onChange((value) => (this.name = value)),
+		);
 
 		new Setting(this.contentEl)
 			.setName("Tags")
@@ -58,14 +68,21 @@ export class WorkspaceEditModal extends Modal {
 				button
 					.setButtonText("Save")
 					.setCta()
-					.onClick(() => {
-						this.close();
-						this.opts.onSave({ tags: this.tags, description: this.description });
-					}),
+					.onClick(() => this.save()),
 			)
 			.addButton((button) =>
 				button.setButtonText("Cancel").onClick(() => this.close()),
 			);
+	}
+
+	private save(): void {
+		if (!this.name.trim()) return;
+		this.close();
+		this.opts.onSave({
+			name: this.name,
+			tags: this.tags,
+			description: this.description,
+		});
 	}
 
 	override onClose(): void {

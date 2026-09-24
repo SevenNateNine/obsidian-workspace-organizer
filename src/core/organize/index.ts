@@ -1,3 +1,4 @@
+export { dropSlot, slotToDelta } from "./order";
 export {
 	countTags,
 	dedupe,

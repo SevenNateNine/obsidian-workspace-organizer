@@ -1,14 +1,8 @@
-import { Setting } from "obsidian";
+import { Menu, Setting, setIcon } from "obsidian";
 import type { WorkspaceEntry } from "../../core/workspaces";
 import { describe } from "../switcher";
+import { enableDragReorder, type ReorderRow } from "./dragReorder";
 import type { SectionContext } from "./SectionContext";
-
-interface RowButton {
-	readonly icon: string;
-	readonly tooltip: string;
-	readonly disabled?: boolean;
-	readonly onClick: () => void;
-}
 
 export function renderManager(ctx: SectionContext): void {
 	const entries = ctx.service.registry.entries();
@@ -22,17 +16,14 @@ export function renderManager(ctx: SectionContext): void {
 		return;
 	}
 
-	for (const [index, entry] of entries.entries()) {
-		const position = { isFirst: index === 0, isLast: index === entries.length - 1 };
-		renderRow(ctx, entry, position);
-	}
+	const rows = entries.map((entry) => renderRow(ctx, entry));
+	enableDragReorder(rows, (from, delta) => {
+		const entry = entries[from];
+		if (entry) ctx.actions.moveBy(entry.name, delta, ctx.redraw);
+	});
 }
 
-function renderRow(
-	ctx: SectionContext,
-	entry: WorkspaceEntry,
-	position: { isFirst: boolean; isLast: boolean },
-): void {
+function renderRow(ctx: SectionContext, entry: WorkspaceEntry): ReorderRow {
 	const { name, meta, isActive } = entry;
 	const { primary } = describe(
 		ctx.service.registry.layoutOf(name),
@@ -44,61 +35,59 @@ function renderRow(
 	const setting = new Setting(ctx.el)
 		.setName(name + (isActive ? " (active)" : ""))
 		.setDesc([tags, primary].filter(Boolean).join(" · "));
+	setting.settingEl.addClass("ew-manager-row");
 	setting.settingEl.toggleClass("ew-archived-row", meta.archived);
 
-	for (const button of rowButtons(ctx, entry, position)) {
-		setting.addExtraButton((extra) =>
-			extra
-				.setIcon(button.icon)
-				.setTooltip(button.tooltip)
-				.setDisabled(button.disabled ?? false)
-				.onClick(button.onClick),
+	const handle = createDiv({
+		cls: "ew-drag-handle",
+		attr: { "aria-label": "Drag to reorder" },
+	});
+	setIcon(handle, "grip-vertical");
+	setting.settingEl.prepend(handle);
+
+	setting
+		.addExtraButton((button) =>
+			button
+				.setIcon("pencil")
+				.setTooltip("Edit name, tags, and description")
+				.onClick(() => ctx.actions.openEditor(name, ctx.redraw)),
+		)
+		.addExtraButton((button) =>
+			button
+				.setIcon("more-vertical")
+				.setTooltip("More")
+				.onClick(() => showMoreMenu(ctx, entry, button.extraSettingsEl)),
 		);
-	}
+
+	return { row: setting.settingEl, handle };
 }
 
-function rowButtons(
+function showMoreMenu(
 	{ actions, redraw }: SectionContext,
 	{ name, meta }: WorkspaceEntry,
-	{ isFirst, isLast }: { isFirst: boolean; isLast: boolean },
-): readonly RowButton[] {
-	return [
-		{
-			icon: "arrow-up",
-			tooltip: "Move up",
-			disabled: isFirst,
-			onClick: () => actions.moveBy(name, -1, redraw),
-		},
-		{
-			icon: "arrow-down",
-			tooltip: "Move down",
-			disabled: isLast,
-			onClick: () => actions.moveBy(name, 1, redraw),
-		},
-		{
-			icon: "tag",
-			tooltip: "Edit tags and description",
-			onClick: () => actions.openEditor(name, redraw),
-		},
-		{
-			icon: "pencil",
-			tooltip: "Rename",
-			onClick: () => actions.promptRename(name, redraw),
-		},
-		{
-			icon: "copy",
-			tooltip: "Duplicate",
-			onClick: () => actions.promptDuplicate(name, redraw),
-		},
-		{
-			icon: meta.archived ? "archive-restore" : "archive",
-			tooltip: meta.archived ? "Unarchive" : "Archive",
-			onClick: () => actions.toggleArchived(name, redraw),
-		},
-		{
-			icon: "trash",
-			tooltip: "Delete",
-			onClick: () => actions.promptDelete(name, redraw),
-		},
-	];
+	anchor: HTMLElement,
+): void {
+	const menu = new Menu();
+	menu.addItem((item) =>
+		item
+			.setTitle("Duplicate")
+			.setIcon("copy")
+			.onClick(() => actions.promptDuplicate(name, redraw)),
+	);
+	menu.addItem((item) =>
+		item
+			.setTitle(meta.archived ? "Unarchive" : "Archive")
+			.setIcon(meta.archived ? "archive-restore" : "archive")
+			.onClick(() => actions.toggleArchived(name, redraw)),
+	);
+	menu.addItem((item) =>
+		item
+			.setTitle("Delete")
+			.setIcon("trash")
+			.setWarning(true)
+			.onClick(() => actions.promptDelete(name, redraw)),
+	);
+
+	const rect = anchor.getBoundingClientRect();
+	menu.showAtPosition({ x: rect.left, y: rect.bottom });
 }

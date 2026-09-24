@@ -33,7 +33,7 @@ export function fillMenu(menu: Menu, actions: WorkspaceActions): void {
 	menu.addSeparator();
 	addEntries(menu, [
 		{
-			title: "Edit tags and description…",
+			title: "Edit name, tags, and description…",
 			icon: "tag",
 			run: () => actions.openEditor(active),
 		},

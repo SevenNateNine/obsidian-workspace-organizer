@@ -1,1 +1,5 @@
-export { WorkspaceService, type WorkspaceServiceDeps } from "./WorkspaceService";
+export {
+	WorkspaceService,
+	type WorkspaceEdit,
+	type WorkspaceServiceDeps,
+} from "./WorkspaceService";

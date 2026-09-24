@@ -5,9 +5,14 @@ import {
 	type GraphModeResolution,
 	type GraphOptionsPort,
 } from "../graph";
+import type { EditableMeta } from "../organize";
 import type { PluginSettings, StorageMode } from "../settings";
 import type { DataOwner, MetaStore } from "../storage";
 import { WorkspaceRegistry, type WorkspacesPort } from "../workspaces";
+
+export interface WorkspaceEdit extends EditableMeta {
+	readonly name: string;
+}
 
 export interface WorkspaceServiceDeps {
 	readonly workspaces: WorkspacesPort;
@@ -95,6 +100,16 @@ export class WorkspaceService {
 			if (saved) await this.deps.graph.apply(saved);
 		}
 		await this.currentRegistry.switchTo(name);
+	}
+
+	/** The rename goes first. If the new name is taken, nothing changes. */
+	async edit(
+		name: string,
+		{ name: nextName, tags, description }: WorkspaceEdit,
+	): Promise<void> {
+		const target = nextName.trim();
+		if (target !== name) await this.currentRegistry.rename(name, target);
+		await this.currentRegistry.setMeta(target, { tags, description });
 	}
 
 	/** Archived workspaces are skipped unless the switcher shows them. */

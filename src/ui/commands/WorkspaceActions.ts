@@ -159,8 +159,7 @@ export class WorkspaceActions {
 			meta,
 			layout: this.service.registry.layoutOf(name),
 			previewNameCount: this.service.settings.previewNameCount,
-			onSave: (patch) =>
-				this.mutate(() => this.service.registry.setMeta(name, patch), after),
+			onSave: (edit) => this.mutate(() => this.service.edit(name, edit), after),
 		}).open();
 	}
 

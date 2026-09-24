@@ -139,3 +139,36 @@
 	color: var(--text-muted);
 	text-decoration: line-through;
 }
+
+/* --- settings: manager reorder --- */
+
+.ew-drag-handle {
+	display: flex;
+	align-items: center;
+	align-self: stretch;
+	margin-right: var(--size-4-2);
+	color: var(--text-faint);
+	cursor: grab;
+	/* Without this, a touch on the handle scrolls the page instead of dragging. */
+	touch-action: none;
+}
+
+.ew-drag-handle:hover {
+	color: var(--text-muted);
+}
+
+.ew-manager-row.is-dragging {
+	opacity: 0.5;
+}
+
+.ew-manager-row.is-dragging .ew-drag-handle {
+	cursor: grabbing;
+}
+
+.ew-manager-row.ew-drop-before {
+	box-shadow: inset 0 2px 0 var(--interactive-accent);
+}
+
+.ew-manager-row.ew-drop-after {
+	box-shadow: inset 0 -2px 0 var(--interactive-accent);
+}
