@@ -1,4 +1,5 @@
 import { App, Notice } from "obsidian";
+import { countTags } from "../../core/organize";
 import type { PluginSettings, StorageMode } from "../../core/settings";
 import type { WorkspaceService } from "../../core/switching";
 import { WorkspaceEditModal } from "../editor";
@@ -159,6 +160,7 @@ export class WorkspaceActions {
 			meta,
 			layout: this.service.registry.layoutOf(name),
 			previewNameCount: this.service.settings.previewNameCount,
+			knownTags: countTags(this.service.registry.entries().map((entry) => entry.meta)),
 			onSave: (edit) => this.mutate(() => this.service.edit(name, edit), after),
 		}).open();
 	}

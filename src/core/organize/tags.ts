@@ -72,3 +72,43 @@ export function countTags(
 		.map(([tag, count]) => ({ tag, count }))
 		.sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
 }
+
+/**
+ * Tags from `known` that match what the user typed, best match first: a prefix,
+ * then a substring, then the letters in order. Ties keep the order of `known`.
+ */
+export function suggestTags(
+	query: string,
+	known: readonly TagCount[],
+	chosen: readonly string[],
+	limit = 8,
+): string[] {
+	const typed = normalizeTag(query);
+	const ranked: { tag: string; rank: number }[] = [];
+
+	for (const { tag } of known) {
+		if (chosen.includes(tag)) continue;
+		const rank = matchRank(tag, typed);
+		if (rank !== null) ranked.push({ tag, rank });
+	}
+
+	return ranked
+		.map((entry, index) => ({ ...entry, index }))
+		.sort((a, b) => a.rank - b.rank || a.index - b.index)
+		.slice(0, limit)
+		.map(({ tag }) => tag);
+}
+
+function matchRank(tag: string, typed: string): number | null {
+	if (tag.startsWith(typed)) return 0;
+	if (tag.includes(typed)) return 1;
+	return isSubsequence(typed, tag) ? 2 : null;
+}
+
+function isSubsequence(needle: string, haystack: string): boolean {
+	let at = 0;
+	for (const char of haystack) {
+		if (char === needle[at]) at += 1;
+	}
+	return at === needle.length;
+}

@@ -1,20 +1,34 @@
 import { App, Modal, Setting } from "obsidian";
 import { formatSummary, summarizeLayout } from "../../core/layout";
-import { parseTags, type WorkspaceMeta } from "../../core/organize";
+import {
+	subtitleOf,
+	type Subtitle,
+	type TagCount,
+	type WorkspaceMeta,
+} from "../../core/organize";
 import type { WorkspaceEdit } from "../../core/switching";
+import { TagPicker } from "./TagPicker";
 
 export interface EditOptions {
 	readonly name: string;
 	readonly meta: WorkspaceMeta;
 	readonly layout: unknown;
 	readonly previewNameCount: number;
+	/** Every tag in use, for suggestions. */
+	readonly knownTags: readonly TagCount[];
 	readonly onSave: (edit: WorkspaceEdit) => void;
 }
 
+const SUBTITLE_LABELS: Readonly<Record<Subtitle, string>> = {
+	description: "Description",
+	preview: "Generated preview",
+};
+
 export class WorkspaceEditModal extends Modal {
 	private name: string;
-	private tags: readonly string[];
+	private subtitle: Subtitle;
 	private description: string;
+	private tagPicker: TagPicker | null = null;
 
 	constructor(
 		app: App,
@@ -22,19 +36,13 @@ export class WorkspaceEditModal extends Modal {
 	) {
 		super(app);
 		this.name = opts.name;
-		this.tags = [...opts.meta.tags];
+		this.subtitle = subtitleOf(opts.meta);
 		this.description = opts.meta.description;
 	}
 
 	override onOpen(): void {
 		this.titleEl.setText(`Edit "${this.opts.name}"`);
-
-		// Shows what a description replaces, before the user saves one.
-		const preview = formatSummary(
-			summarizeLayout(this.opts.layout),
-			this.opts.previewNameCount,
-		);
-		this.contentEl.createEl("p", { cls: "ew-preview", text: preview });
+		this.contentEl.addClass("ew-edit-modal");
 
 		new Setting(this.contentEl).setName("Name").addText((text) =>
 			text
@@ -43,25 +51,18 @@ export class WorkspaceEditModal extends Modal {
 				.onChange((value) => (this.name = value)),
 		);
 
-		new Setting(this.contentEl)
-			.setName("Tags")
-			.setDesc("Separate with commas or spaces. The # is optional.")
-			.addText((text) =>
-				text
-					.setPlaceholder("writing, deep-work")
-					.setValue(this.tags.join(", "))
-					.onChange((value) => (this.tags = parseTags(value))),
-			);
+		this.stackedHeading(
+			"Tags",
+			"Type to see tags you already use. Press Enter to pick one.",
+		);
+		this.tagPicker = new TagPicker(
+			this.contentEl,
+			this.opts.meta.tags,
+			this.opts.knownTags,
+		);
 
-		new Setting(this.contentEl)
-			.setName("Description")
-			.setDesc("Replaces the generated preview above. Leave empty to keep the preview.")
-			.addTextArea((area) =>
-				area
-					.setPlaceholder("What this workspace is for")
-					.setValue(this.description)
-					.onChange((value) => (this.description = value.trim())),
-			);
+		this.renderSubtitle();
+		this.renderDescription();
 
 		new Setting(this.contentEl)
 			.addButton((button) =>
@@ -75,13 +76,53 @@ export class WorkspaceEditModal extends Modal {
 			);
 	}
 
+	private renderSubtitle(): void {
+		const preview = formatSummary(
+			summarizeLayout(this.opts.layout),
+			this.opts.previewNameCount,
+		);
+		new Setting(this.contentEl)
+			.setName("Show under the name")
+			.setDesc(`Generated preview: ${preview}`)
+			.addDropdown((dropdown) => {
+				for (const [value, label] of Object.entries(SUBTITLE_LABELS)) {
+					dropdown.addOption(value, label);
+				}
+				dropdown
+					.setValue(this.subtitle)
+					.onChange((value) => (this.subtitle = value as Subtitle));
+			});
+	}
+
+	private renderDescription(): void {
+		this.stackedHeading(
+			"Description",
+			"What this workspace is for. With no description, the preview shows instead.",
+		);
+		const area = this.contentEl.createEl("textarea", {
+			cls: "ew-description-input",
+			attr: { rows: "4", placeholder: "What this workspace is for" },
+		});
+		area.value = this.description;
+		area.addEventListener("input", () => (this.description = area.value.trim()));
+	}
+
+	/** A heading with no control, so the field below it can use the full width. */
+	private stackedHeading(name: string, desc: string): void {
+		new Setting(this.contentEl)
+			.setName(name)
+			.setDesc(desc)
+			.setClass("ew-stacked-heading");
+	}
+
 	private save(): void {
 		if (!this.name.trim()) return;
 		this.close();
 		this.opts.onSave({
 			name: this.name,
-			tags: this.tags,
+			tags: this.tagPicker?.value() ?? this.opts.meta.tags,
 			description: this.description,
+			subtitle: this.subtitle,
 		});
 	}
 

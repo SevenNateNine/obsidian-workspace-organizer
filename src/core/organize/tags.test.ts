@@ -1,5 +1,51 @@
 import { describe, expect, it } from "vitest";
-import { countTags, hasAllTags, normalizeTag, parseQuery, parseTags } from "./tags";
+import {
+	countTags,
+	hasAllTags,
+	normalizeTag,
+	parseQuery,
+	parseTags,
+	suggestTags,
+} from "./tags";
+
+describe("suggestTags", () => {
+	const known = [
+		{ tag: "writing", count: 3 },
+		{ tag: "deep-work", count: 2 },
+		{ tag: "rewrite", count: 1 },
+		{ tag: "web", count: 1 },
+	];
+
+	it("lists the most used tags for an empty query", () => {
+		expect(suggestTags("", known, [], 2)).toEqual(["writing", "deep-work"]);
+	});
+
+	it("ranks a prefix, then a substring, then letters in order", () => {
+		expect(suggestTags("w", known, [])).toEqual([
+			"writing",
+			"web",
+			"deep-work",
+			"rewrite",
+		]);
+		expect(suggestTags("wr", known, [])).toEqual(["writing", "rewrite", "deep-work"]);
+		expect(suggestTags("dw", known, [])).toEqual(["deep-work"]);
+	});
+
+	it("normalizes the query", () => {
+		expect(suggestTags("#Deep Work", known, [])).toEqual(["deep-work"]);
+	});
+
+	it("leaves out tags that are already chosen", () => {
+		expect(suggestTags("w", known, ["writing", "web"])).toEqual([
+			"deep-work",
+			"rewrite",
+		]);
+	});
+
+	it("returns nothing when no tag matches", () => {
+		expect(suggestTags("zzz", known, [])).toEqual([]);
+	});
+});
 
 describe("normalizeTag", () => {
 	it("strips a leading hash and lower cases", () => {

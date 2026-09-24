@@ -24,10 +24,10 @@ plugin is on, and it shows a notice.
 
 | Feature        | What it does                                                                                                                                         |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tags           | Group your workspaces. Filter the switcher by tag.                                                                                                   |
+| Tags           | Group your workspaces. Filter the switcher by tag. When you type a tag, the plugin suggests the tags that you already use.                           |
 | Archive        | Hide a workspace from the switcher, but keep it. An archived workspace stays in the manager.                                                         |
 | Order          | Put the list in your own order. Next and previous use this order and skip archived workspaces.                                                       |
-| Descriptions   | Write a note about the purpose of a workspace. The switcher shows it.                                                                                |
+| Descriptions   | Write a note about the purpose of a workspace. For each workspace, select what shows under its name: the description or the generated preview.       |
 | Switcher       | Fuzzy search on names, tags, and descriptions. Type `#tag` to filter by a tag.                                                                       |
 | Layout preview | A workspace with no description shows a generated summary: `5 tabs, 2 splits · Chapter 1, Outline, +3`.                                              |
 | Manager        | In the plugin settings. Drag the handle to reorder. The pencil edits the name, tags, and description. The ⋮ menu has duplicate, archive, and delete. |

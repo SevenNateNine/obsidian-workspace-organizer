@@ -122,6 +122,12 @@ describe("normalizeMeta", () => {
 		const meta = { tags: ["dev"], archived: true, description: "API work", order: 3 };
 		expect(normalizeMeta(meta)).toEqual(meta);
 	});
+
+	it("keeps a valid subtitle choice and drops an unknown one", () => {
+		expect(normalizeMeta({ subtitle: "preview" }).subtitle).toBe("preview");
+		expect(normalizeMeta({ subtitle: "description" }).subtitle).toBe("description");
+		expect(normalizeMeta({ subtitle: "banner" })).not.toHaveProperty("subtitle");
+	});
 });
 
 describe("normalizeMeta graph snapshot", () => {

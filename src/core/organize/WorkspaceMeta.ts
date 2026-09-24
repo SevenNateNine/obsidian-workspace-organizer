@@ -1,11 +1,16 @@
+/** What a row shows under the workspace name. Stored in `data.json`. */
+export const SUBTITLES = ["description", "preview"] as const;
+export type Subtitle = (typeof SUBTITLES)[number];
+
 export interface WorkspaceMeta {
 	/** Normalized by `normalizeTag`. */
 	readonly tags: readonly string[];
 	readonly archived: boolean;
-	/** Empty falls back to the generated layout preview. */
 	readonly description: string;
 	/** Contiguous from 0 after `reconcile`. */
 	readonly order: number;
+	/** Absent in data from older builds, which means `description`. */
+	readonly subtitle?: Subtitle;
 	/**
 	 * Obsidian keeps graph settings outside the layout, so `getLayout` cannot carry them.
 	 * Kept when `graphSettings` turns off, so turning it on again does not start from nothing.
@@ -15,8 +20,21 @@ export interface WorkspaceMeta {
 
 export type MetaByName = Readonly<Record<string, WorkspaceMeta>>;
 
-export type EditableMeta = Pick<WorkspaceMeta, "tags" | "description">;
+export interface EditableMeta {
+	readonly tags: readonly string[];
+	readonly description: string;
+	readonly subtitle: Subtitle;
+}
 
 export function defaultMeta(order = 0): WorkspaceMeta {
 	return { tags: [], archived: false, description: "", order };
+}
+
+export function subtitleOf(meta: WorkspaceMeta): Subtitle {
+	return meta.subtitle ?? "description";
+}
+
+/** An empty description falls back to the preview, so a row never shows a blank line. */
+export function showsPreview(meta: WorkspaceMeta): boolean {
+	return subtitleOf(meta) === "preview" || !meta.description;
 }

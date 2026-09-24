@@ -103,13 +103,10 @@ export class WorkspaceService {
 	}
 
 	/** The rename goes first. If the new name is taken, nothing changes. */
-	async edit(
-		name: string,
-		{ name: nextName, tags, description }: WorkspaceEdit,
-	): Promise<void> {
+	async edit(name: string, { name: nextName, ...meta }: WorkspaceEdit): Promise<void> {
 		const target = nextName.trim();
 		if (target !== name) await this.currentRegistry.rename(name, target);
-		await this.currentRegistry.setMeta(target, { tags, description });
+		await this.currentRegistry.setMeta(target, meta);
 	}
 
 	/** Archived workspaces are skipped unless the switcher shows them. */

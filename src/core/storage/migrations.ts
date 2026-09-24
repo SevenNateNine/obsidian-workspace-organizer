@@ -1,4 +1,10 @@
-import { dedupe, defaultMeta, normalizeTag, type WorkspaceMeta } from "../organize";
+import {
+	SUBTITLES,
+	dedupe,
+	defaultMeta,
+	normalizeTag,
+	type WorkspaceMeta,
+} from "../organize";
 import {
 	DEFAULT_SETTINGS,
 	GRAPH_MODES,
@@ -84,9 +90,11 @@ export function normalizeMeta(raw: unknown): WorkspaceMeta {
 		description: typeof stored.description === "string" ? stored.description : "",
 		// Only `reconcile` makes the order authoritative.
 		order: clamp(stored.order, 0, Number.MAX_SAFE_INTEGER, fallback.order),
+		// Omitted rather than undefined, for `exactOptionalPropertyTypes`.
+		...(isOneOf(stored.subtitle, SUBTITLES) ? { subtitle: stored.subtitle } : {}),
 	};
 
-	// Omitted rather than undefined, for `exactOptionalPropertyTypes`. The shape belongs to core.
+	// The graph shape belongs to core, so it stays opaque.
 	return isRecord(stored.graph) ? { ...meta, graph: stored.graph } : meta;
 }
 

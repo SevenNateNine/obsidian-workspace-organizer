@@ -110,10 +110,106 @@
 	margin-bottom: var(--size-4-2);
 }
 
-.ew-preview {
-	margin-top: 0;
-	color: var(--text-muted);
+/* --- edit modal --- */
+
+/* A heading with no control. The field below it uses the full width. */
+.ew-edit-modal .ew-stacked-heading {
+	padding-bottom: var(--size-4-1);
+	border-bottom: none;
+}
+
+.ew-edit-modal .ew-stacked-heading .setting-item-control {
+	display: none;
+}
+
+.ew-description-input {
+	width: 100%;
+	min-height: 6em;
+	resize: vertical;
+	margin-bottom: var(--size-4-3);
+}
+
+.ew-tag-picker {
+	position: relative;
+	margin-bottom: var(--size-4-3);
+}
+
+.ew-tag-picker-field {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-2-2);
+	padding: var(--size-2-2) var(--size-4-2);
+	border: var(--input-border-width, 1px) solid var(--background-modifier-border);
+	border-radius: var(--input-radius, var(--radius-s));
+	background-color: var(--background-modifier-form-field);
+	cursor: text;
+}
+
+.ew-tag-picker-field:focus-within {
+	border-color: var(--interactive-accent);
+}
+
+.ew-tag-picker-input.ew-tag-picker-input {
+	flex: 1;
+	min-width: 8em;
+	padding: 0;
+	border: none;
+	background: transparent;
+	box-shadow: none;
+}
+
+.ew-tag-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-2-1);
+	padding: 0 var(--size-2-2);
+	border-radius: var(--tag-radius, var(--radius-s));
+	background-color: var(--tag-background, var(--background-modifier-hover));
+	color: var(--tag-color, var(--text-accent));
 	font-size: var(--font-smaller);
+}
+
+.ew-tag-chip-remove {
+	display: inline-flex;
+	color: var(--text-muted);
+	cursor: pointer;
+	--icon-size: var(--icon-xs);
+}
+
+.ew-tag-chip-remove:hover {
+	color: var(--text-normal);
+}
+
+.ew-tag-suggestions:empty {
+	display: none;
+}
+
+.ew-tag-suggestions {
+	position: absolute;
+	z-index: var(--layer-popover);
+	top: 100%;
+	left: 0;
+	right: 0;
+	max-height: 14em;
+	overflow-y: auto;
+	margin-top: var(--size-2-1);
+	padding: var(--size-2-2);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-primary);
+	box-shadow: var(--shadow-s);
+}
+
+.ew-tag-suggestion {
+	padding: var(--size-2-2) var(--size-4-2);
+	border-radius: var(--radius-s);
+	cursor: pointer;
+}
+
+.ew-tag-suggestion.is-selected,
+.ew-tag-suggestion:hover {
+	background-color: var(--background-modifier-hover);
 }
 
 .ew-warning {

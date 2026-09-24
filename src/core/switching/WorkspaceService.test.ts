@@ -360,7 +360,12 @@ describe("edit", () => {
 		const h = await harness();
 		await withWorkspaces(h, "A");
 
-		await h.service.edit("A", { name: " B ", tags: ["x"], description: "d" });
+		await h.service.edit("A", {
+			name: " B ",
+			tags: ["x"],
+			description: "d",
+			subtitle: "preview",
+		});
 
 		expect(h.service.registry.metaOf("A")).toBeNull();
 		expect(h.service.registry.metaOf("B")).toMatchObject({
@@ -375,7 +380,12 @@ describe("edit", () => {
 		await withWorkspaces(h, "A");
 		h.workspaces.writable = false;
 
-		await h.service.edit("A", { name: "A", tags: ["x"], description: "" });
+		await h.service.edit("A", {
+			name: "A",
+			tags: ["x"],
+			description: "",
+			subtitle: "description",
+		});
 
 		expect(h.service.registry.metaOf("A")?.tags).toEqual(["x"]);
 	});
@@ -385,7 +395,12 @@ describe("edit", () => {
 		await withWorkspaces(h, "A", "B");
 
 		await expect(
-			h.service.edit("A", { name: "B", tags: ["x"], description: "" }),
+			h.service.edit("A", {
+				name: "B",
+				tags: ["x"],
+				description: "",
+				subtitle: "description",
+			}),
 		).rejects.toMatchObject({ kind: "name-taken" });
 		expect(h.service.registry.metaOf("A")?.tags).toEqual([]);
 	});
