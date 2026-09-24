@@ -12,7 +12,7 @@ Each rule here comes from a real error, or prevents one. Add a rule after each n
 - Never install a new dependency without approval.
 - Never edit `main.js`. It is the esbuild bundle of `src/`. Edit the source, then build.
 - Never import a Node builtin in `src/`. The manifest declares `isDesktopOnly: false`, and Obsidian mobile has no Node.
-- Never use `app.internalPlugins` or `app.plugins` outside `GraphOptionsAdapter`. Everything else is on documented API. To know whether a plugin is on, read `core-plugins.json` or `community-plugins.json` through `src/obsidian/plugins/pluginState.ts`. The graph exception is in the deviations table.
+- Never use `app.internalPlugins` or `app.plugins`. Everything is on documented API. To know whether a plugin is on, read `core-plugins.json` through `src/obsidian/plugins/pluginState.ts`.
 - Never write `.obsidian/workspaces.json` outside `DirectWorkspacesAdapter`. It is the only writer, and the format rules live in `core/workspaces/workspaceFile.ts`.
 - Never change how that file is serialized without running the round-trip test. A format drift gives every synced vault a spurious diff.
 - Never write the file while the core Workspaces plugin is on. Both write it, and the loser's workspaces disappear with no message.
@@ -36,8 +36,7 @@ The user can override these steps for one session.
 
 This plugin replaces Obsidian's core Workspaces plugin, which must be turned off. It reads and writes
 the same `.obsidian/workspaces.json` in the same format. It has no runtime dependencies. It uses
-documented API everywhere except `GraphOptionsAdapter`, which reaches the core graph plugin. See the
-deviations table.
+documented API everywhere.
 `src/core/storage/migrations.ts` migrates the persisted metadata schema. It runs on every load.
 
 ## Commands
@@ -128,23 +127,13 @@ The file can change under us: another device can sync it, and a user can edit it
 watcher. Call `WorkspaceActions.reload()` before showing a list instead. It re-reads the file, re-checks the core
 plugin state, and re-derives metadata, and it is cheap.
 
-## Graph ownership
+## Removed graph settings
 
-Obsidian keeps one global set of graph settings, so a saved layout carries none of them. This plugin
-can store them per workspace, but it applies them globally, which is one set for every graph pane.
-Plugins built for the graph do it per pane and do it better.
+On 2026-09-24 the feature that saved graph settings with each workspace was removed. It can return.
+The code is in the git history before the commit that removed it.
 
-`core/graph/graphOwners.ts` decides who wins. It is pure and takes the enabled plugin list as an
-argument, so it is tested without Obsidian. The `graphSettings` setting has three modes: `auto`
-stands aside when a plugin in `GRAPH_OWNERS` is enabled, `always` and `never` are the explicit
-overrides.
-
-Keep the overrides. `GRAPH_OWNERS` can never list every graph plugin, so auto is a convenience and
-the explicit modes are the real answer for anything it misses. Adding an id to that list is a fine
-change; making auto the only mode is not.
-
-Obsidian fires no documented event when a plugin is turned on or off, so `WorkspaceService.graphMode()`
-reads the enabled list again in each use case. It is not cached and not watched.
+Stored data stays. `normalizeMeta` keeps the opaque `graph` key of each workspace. `migrateSettings` keeps
+`graphSettings` and `saveGraphSettings`. Do not drop them, because a return needs them.
 
 ## Comments
 
@@ -169,7 +158,6 @@ reads the enabled list again in each use case. It is not cached and not watched.
 
 ## Deviations
 
-| Date       | Rule                            | Location                                    | Reason                                                                                                                                                                                                                   | Removal plan                                                                                                                                                                                       |
-| ---------- | ------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-08-20 | Strictest compiler mode         | `tsconfig.json` `include: ["src/**/*.ts"]`  | `test/obsidian-stub.ts`, `vitest.config.ts`, `eslint.config.js`, and `esbuild.config.mjs` are outside the type check. The build only needs `src/`.                                                                       | Add a second `tsconfig` that covers the test and config files.                                                                                                                                     |
-| 2026-08-24 | Never use `app.internalPlugins` | `src/obsidian/graph/GraphOptionsAdapter.ts` | The global graph view has no view state, so a saved layout can carry nothing about the graph. The documented route writes `graph.json` and waits for a 50 ms debounced watcher to reread it, which races `changeLayout`. | Remove when Obsidian gives the graph view a real view state, or a documented API for the core graph options. Already skipped entirely when `graphSettings` resolves inactive, see Graph ownership. |
+| Date       | Rule                    | Location                                   | Reason                                                                                                                                             | Removal plan                                                   |
+| ---------- | ----------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| 2026-08-20 | Strictest compiler mode | `tsconfig.json` `include: ["src/**/*.ts"]` | `test/obsidian-stub.ts`, `vitest.config.ts`, `eslint.config.js`, and `esbuild.config.mjs` are outside the type check. The build only needs `src/`. | Add a second `tsconfig` that covers the test and config files. |

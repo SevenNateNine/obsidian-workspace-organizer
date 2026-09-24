@@ -1,5 +1,1 @@
-export {
-	enabledCommunityPluginIds,
-	isCoreWorkspacesEnabled,
-	parseEnabledIds,
-} from "./pluginState";
+export { isCoreWorkspacesEnabled, parseEnabledIds } from "./pluginState";

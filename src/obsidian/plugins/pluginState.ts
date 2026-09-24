@@ -13,20 +13,12 @@ export async function isCoreWorkspacesEnabled(
 	return ids.includes(CORE_WORKSPACES_ID);
 }
 
-export async function enabledCommunityPluginIds(
-	adapter: DataAdapter,
-	configDir: string,
-): Promise<string[]> {
-	return enabledIds(adapter, `${configDir}/community-plugins.json`);
-}
-
 async function enabledIds(adapter: DataAdapter, path: string): Promise<string[]> {
 	try {
 		if (!(await adapter.exists(path))) return [];
 		return parseEnabledIds(await adapter.read(path));
 	} catch {
-		// An empty list is the permissive answer for both callers: writes stay
-		// allowed, and the graph setting stays on.
+		// An empty list is the permissive answer: writes stay allowed.
 		return [];
 	}
 }

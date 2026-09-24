@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DataAdapter } from "obsidian";
-import {
-	enabledCommunityPluginIds,
-	isCoreWorkspacesEnabled,
-	parseEnabledIds,
-} from "./pluginState";
+import { isCoreWorkspacesEnabled, parseEnabledIds } from "./pluginState";
 
 describe("parseEnabledIds", () => {
 	it("reads the object form Obsidian writes today", () => {
@@ -82,23 +78,5 @@ describe("isCoreWorkspacesEnabled", () => {
 	it("honours a non-default config directory", async () => {
 		const adapter = fakeAdapter({ "custom/core-plugins.json": '{"workspaces":true}' });
 		expect(await isCoreWorkspacesEnabled(adapter, "custom")).toBe(true);
-	});
-});
-
-describe("enabledCommunityPluginIds", () => {
-	const path = ".obsidian/community-plugins.json";
-
-	it("lists the enabled ids", async () => {
-		const adapter = fakeAdapter({ [path]: '["dataview","graph-profiles"]' });
-		expect(await enabledCommunityPluginIds(adapter, ".obsidian")).toEqual([
-			"dataview",
-			"graph-profiles",
-		]);
-	});
-
-	// A vault with no community plugins has no file at all.
-	it("lists nothing when the file is missing or unreadable", async () => {
-		expect(await enabledCommunityPluginIds(fakeAdapter({}), ".obsidian")).toEqual([]);
-		expect(await enabledCommunityPluginIds(brokenAdapter, ".obsidian")).toEqual([]);
 	});
 });

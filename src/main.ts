@@ -1,7 +1,5 @@
 import { Plugin } from "obsidian";
 import { WorkspaceService } from "./core/switching";
-import { GraphOptionsAdapter } from "./obsidian/graph";
-import { enabledCommunityPluginIds } from "./obsidian/plugins";
 import { EmbeddedStore, SidecarStore, loadPluginData } from "./obsidian/storage";
 import { DirectWorkspacesAdapter } from "./obsidian/workspaces";
 import { WorkspaceActions, registerCommands, statusBarHandlers } from "./ui/commands";
@@ -41,9 +39,6 @@ async function buildContext(plugin: Plugin): Promise<Context> {
 	const service = new WorkspaceService({
 		workspaces: file,
 		reloadWorkspaces: () => file.reload(),
-		graph: new GraphOptionsAdapter(app),
-		enabledPluginIds: () =>
-			enabledCommunityPluginIds(app.vault.adapter, app.vault.configDir),
 		data,
 		storeFor: (mode) => (mode === "embedded" ? embedded : sidecar),
 	});

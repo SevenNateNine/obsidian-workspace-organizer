@@ -12,8 +12,8 @@ export interface WorkspaceMeta {
 	/** Absent in data from older builds, which means `description`. */
 	readonly subtitle?: Subtitle;
 	/**
-	 * Obsidian keeps graph settings outside the layout, so `getLayout` cannot carry them.
-	 * Kept when `graphSettings` turns off, so turning it on again does not start from nothing.
+	 * A graph settings snapshot from the removed graph feature. Nothing reads it.
+	 * It is kept so that stored snapshots survive if the feature returns.
 	 */
 	readonly graph?: Readonly<Record<string, unknown>>;
 }

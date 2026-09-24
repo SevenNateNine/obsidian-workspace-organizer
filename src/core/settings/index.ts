@@ -1,11 +1,9 @@
 export {
 	DEFAULT_SETTINGS,
-	GRAPH_MODES,
 	PREVIEW_NAME_COUNT,
 	STATUS_BAR_ACTIONS,
 	STORAGE_MODES,
 	SWITCH_PROMPTS,
-	type GraphMode,
 	type PluginSettings,
 	type StatusBarAction,
 	type StatusBarButton,

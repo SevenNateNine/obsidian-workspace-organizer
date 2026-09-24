@@ -22,10 +22,6 @@ export type StatusBarAction = (typeof STATUS_BAR_ACTIONS)[number];
 export const SWITCH_PROMPTS = ["always", "changed", "never"] as const;
 export type SwitchPrompt = (typeof SWITCH_PROMPTS)[number];
 
-/** See `core/graph/graphOwners.ts` for why `always` and `never` exist beside `auto`. */
-export const GRAPH_MODES = ["auto", "always", "never"] as const;
-export type GraphMode = (typeof GRAPH_MODES)[number];
-
 export const PREVIEW_NAME_COUNT = { min: 1, max: 8 } as const;
 
 export interface StatusBarSettings {
@@ -40,7 +36,6 @@ export type StatusBarButton = Exclude<keyof StatusBarSettings, "enabled">;
 export interface PluginSettings {
 	readonly storage: StorageMode;
 	readonly promptOnSwitch: SwitchPrompt;
-	readonly graphSettings: GraphMode;
 	readonly showArchived: boolean;
 	readonly previewNameCount: number;
 	readonly statusBar: StatusBarSettings;
@@ -49,7 +44,6 @@ export interface PluginSettings {
 export const DEFAULT_SETTINGS: PluginSettings = {
 	storage: "sidecar",
 	promptOnSwitch: "always",
-	graphSettings: "auto",
 	showArchived: false,
 	previewNameCount: 3,
 	statusBar: {

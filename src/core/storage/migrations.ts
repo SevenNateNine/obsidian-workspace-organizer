@@ -7,12 +7,10 @@ import {
 } from "../organize";
 import {
 	DEFAULT_SETTINGS,
-	GRAPH_MODES,
 	PREVIEW_NAME_COUNT,
 	STATUS_BAR_ACTIONS,
 	STORAGE_MODES,
 	SWITCH_PROMPTS,
-	type GraphMode,
 	type PluginSettings,
 	type StatusBarAction,
 	type SwitchPrompt,
@@ -37,15 +35,12 @@ function migrateSettings(raw: unknown): PluginSettings {
 	const stored = isRecord(raw) ? raw : {};
 	const defaults = DEFAULT_SETTINGS;
 
-	// Taken out of the spread so that the renamed key does not stay in `data.json`.
-	const { saveGraphSettings: legacyGraph, ...rest } = stored;
-
 	return {
 		...defaults,
-		...rest,
+		// Also keeps `graphSettings` and `saveGraphSettings` of the removed graph feature, for a possible return.
+		...stored,
 		storage: oneOf(stored.storage, STORAGE_MODES, defaults.storage),
 		promptOnSwitch: switchPrompt(stored.promptOnSwitch, defaults.promptOnSwitch),
-		graphSettings: graphMode(stored.graphSettings, legacyGraph, defaults.graphSettings),
 		showArchived: bool(stored.showArchived, defaults.showArchived),
 		// Zero or less would render a preview with no names.
 		previewNameCount: clamp(
@@ -94,7 +89,7 @@ export function normalizeMeta(raw: unknown): WorkspaceMeta {
 		...(isOneOf(stored.subtitle, SUBTITLES) ? { subtitle: stored.subtitle } : {}),
 	};
 
-	// The graph shape belongs to core, so it stays opaque.
+	// The graph feature is removed. Keep its snapshot opaque, so a return finds it.
 	return isRecord(stored.graph) ? { ...meta, graph: stored.graph } : meta;
 }
 
@@ -113,16 +108,6 @@ function switchPrompt(value: unknown, fallback: SwitchPrompt): SwitchPrompt {
 	if (value === true) return "always";
 	if (value === false) return "never";
 	return oneOf(value, SWITCH_PROMPTS, fallback);
-}
-
-/**
- * An older build wrote a boolean under `saveGraphSettings`. True becomes `auto`,
- * not `always`, so an upgrade gets the stand-aside behavior.
- */
-function graphMode(value: unknown, legacy: unknown, fallback: GraphMode): GraphMode {
-	if (isOneOf(value, GRAPH_MODES)) return value;
-	if (typeof legacy === "boolean") return legacy ? "auto" : "never";
-	return fallback;
 }
 
 function action(value: unknown, fallback: StatusBarAction): StatusBarAction {

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { GraphOptions, GraphOptionsPort } from "../graph";
 import { defaultMeta, type MetaByName } from "../organize";
 import { DEFAULT_SETTINGS, type PluginSettings, type StorageMode } from "../settings";
 import { WorkspaceError } from "../shared";
@@ -61,20 +60,6 @@ class FakeWorkspaces implements WorkspacesPort {
 	}
 }
 
-class FakeGraph implements GraphOptionsPort {
-	options: GraphOptions | null = { search: "shark" };
-
-	constructor(private readonly log: Log) {}
-
-	current(): GraphOptions | null {
-		return this.options && { ...this.options };
-	}
-	async apply(options: GraphOptions): Promise<void> {
-		this.log.push(`graph.apply ${JSON.stringify(options)}`);
-		this.options = { ...options };
-	}
-}
-
 class FakeStore implements MetaStore {
 	constructor(
 		private readonly label: string,
@@ -105,10 +90,8 @@ class FakeData implements DataOwner {
 interface Harness {
 	log: Log;
 	workspaces: FakeWorkspaces;
-	graph: FakeGraph;
 	data: FakeData;
 	stores: Record<StorageMode, FakeStore>;
-	enabled: string[];
 	service: WorkspaceService;
 }
 
@@ -123,16 +106,12 @@ async function harness(settings: Partial<PluginSettings> = {}): Promise<Harness>
 	const h: Omit<Harness, "service"> = {
 		log,
 		workspaces: new FakeWorkspaces(log),
-		graph: new FakeGraph(log),
 		data,
 		stores,
-		enabled: [],
 	};
 	const service = new WorkspaceService({
 		workspaces: h.workspaces,
 		reloadWorkspaces: async () => void log.push("reload"),
-		graph: h.graph,
-		enabledPluginIds: async () => h.enabled,
 		data,
 		storeFor: (mode) => stores[mode],
 	});
@@ -170,7 +149,7 @@ describe("needsPrompt", () => {
 	});
 
 	it("in changed mode, asks only when the layout changed", async () => {
-		const h = await harness({ promptOnSwitch: "changed", graphSettings: "never" });
+		const h = await harness({ promptOnSwitch: "changed" });
 		await withWorkspaces(h, "A", "B");
 		h.workspaces.active = "A";
 
@@ -180,92 +159,46 @@ describe("needsPrompt", () => {
 		h.workspaces.live = { main: "moved" };
 		expect(await h.service.needsPrompt("B")).toBe(true);
 	});
-
-	it("in changed mode, asks when the graph changed and graph mode is active", async () => {
-		const h = await harness({ promptOnSwitch: "changed", graphSettings: "auto" });
-		await withWorkspaces(h, "A", "B");
-		h.workspaces.active = "A";
-		h.workspaces.live = { main: "A" };
-		await h.service.registry.setMeta("A", { graph: { search: "whale" } });
-
-		expect(await h.service.needsPrompt("B")).toBe(true);
-
-		h.enabled.push("graph-profiles");
-		expect(await h.service.needsPrompt("B")).toBe(false);
-	});
-
-	it("in changed mode, ignores the graph for a workspace with no snapshot", async () => {
-		const h = await harness({ promptOnSwitch: "changed", graphSettings: "always" });
-		await withWorkspaces(h, "A", "B");
-		h.workspaces.active = "A";
-		h.workspaces.live = { main: "A" };
-
-		expect(await h.service.needsPrompt("B")).toBe(false);
-	});
 });
 
 describe("save", () => {
-	it("saves the layout, then the graph snapshot, when graph mode is active", async () => {
-		const h = await harness({ graphSettings: "always" });
-
-		await h.service.save("A");
-
-		expect(h.log).toEqual(["layout.save A", "sidecar.write A", "sidecar.write A"]);
-		expect(h.service.registry.metaOf("A")?.graph).toEqual({ search: "shark" });
-	});
-
-	it("saves only the layout when graph mode is inactive", async () => {
-		const h = await harness({ graphSettings: "auto" });
-		h.enabled.push("extended-graph");
+	it("saves only the layout", async () => {
+		const h = await harness();
 
 		await h.service.save("A");
 
 		expect(h.log).toEqual(["layout.save A", "sidecar.write A"]);
-		expect(h.service.registry.metaOf("A")?.graph).toBeUndefined();
 	});
 
-	it("skips the snapshot when the graph plugin is unreachable", async () => {
-		const h = await harness({ graphSettings: "always" });
-		h.graph.options = null;
+	// The graph feature is removed, but its stored snapshot must survive for a return.
+	it("keeps a stored graph snapshot", async () => {
+		const h = await harness();
+		await withWorkspaces(h, "A");
+		await h.service.registry.setMeta("A", { graph: { search: "whale" } });
 
 		await h.service.save("A");
 
-		expect(h.service.registry.metaOf("A")?.graph).toBeUndefined();
+		expect(h.service.registry.metaOf("A")?.graph).toEqual({ search: "whale" });
 	});
 });
 
 describe("load", () => {
-	async function withSnapshot(settings: Partial<PluginSettings>): Promise<Harness> {
-		const h = await harness(settings);
+	it("changes the layout", async () => {
+		const h = await harness();
 		await withWorkspaces(h, "A");
-		await h.service.registry.setMeta("A", { graph: { search: "whale" } });
-		h.log.length = 0;
-		return h;
-	}
-
-	it("applies the graph before it changes the layout", async () => {
-		const h = await withSnapshot({ graphSettings: "always" });
-
-		await h.service.load("A");
-
-		expect(h.log).toEqual(['graph.apply {"search":"whale"}', "layout.load A"]);
-	});
-
-	it("leaves the graph alone when graph mode is inactive", async () => {
-		const h = await withSnapshot({ graphSettings: "never" });
 
 		await h.service.load("A");
 
 		expect(h.log).toEqual(["layout.load A"]);
 	});
 
-	it("leaves the graph alone when the switch will be refused", async () => {
-		const h = await withSnapshot({ graphSettings: "always" });
+	it("refuses while core Workspaces is on", async () => {
+		const h = await harness();
+		await withWorkspaces(h, "A");
 		h.workspaces.writable = false;
 
 		await expect(h.service.load("A")).rejects.toBeInstanceOf(WorkspaceError);
 		expect(h.log).toEqual([]);
-		expect(h.graph.options).toEqual({ search: "shark" });
 	});
 });
 

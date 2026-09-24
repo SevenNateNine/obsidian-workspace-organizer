@@ -45,35 +45,15 @@ describe("migrateData", () => {
 	});
 });
 
-describe("migrateData graph mode", () => {
-	it("defaults the graph mode and rejects a bad value", () => {
-		expect(migrateData({}).settings.graphSettings).toBe(DEFAULT_SETTINGS.graphSettings);
-		expect(
-			migrateData({ settings: { graphSettings: "sometimes" } }).settings.graphSettings,
-		).toBe(DEFAULT_SETTINGS.graphSettings);
-		expect(
-			migrateData({ settings: { graphSettings: "never" } }).settings.graphSettings,
-		).toBe("never");
-	});
-
-	// On becomes `auto`, not `always`, so an upgrade stands aside for a graph
-	// plugin instead of keeping the double write it was configured before.
-	it("reads the graph switch a older build wrote as a boolean", () => {
-		expect(
-			migrateData({ settings: { saveGraphSettings: true } }).settings.graphSettings,
-		).toBe("auto");
-		expect(
-			migrateData({ settings: { saveGraphSettings: false } }).settings.graphSettings,
-		).toBe("never");
-	});
-
-	it("prefers the new key and drops the old one", () => {
+describe("migrateData settings", () => {
+	// The graph feature is removed. Its settings stay in `data.json` for a possible return.
+	it("keeps the graph settings it no longer reads", () => {
 		const settings = migrateData({
-			settings: { saveGraphSettings: false, graphSettings: "always" },
+			settings: { graphSettings: "always", saveGraphSettings: false },
 		}).settings;
 
-		expect(settings.graphSettings).toBe("always");
-		expect(settings).not.toHaveProperty("saveGraphSettings");
+		expect(settings).toHaveProperty("graphSettings", "always");
+		expect(settings).toHaveProperty("saveGraphSettings", false);
 	});
 
 	it("rejects an unknown storage mode", () => {

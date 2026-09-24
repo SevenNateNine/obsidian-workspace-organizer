@@ -1,10 +1,3 @@
-import {
-	graphOptionsDiffer,
-	resolveGraphMode,
-	type EnabledPluginIds,
-	type GraphModeResolution,
-	type GraphOptionsPort,
-} from "../graph";
 import type { EditableMeta } from "../organize";
 import type { PluginSettings, StorageMode } from "../settings";
 import type { DataOwner, MetaStore } from "../storage";
@@ -18,16 +11,11 @@ export interface WorkspaceServiceDeps {
 	readonly workspaces: WorkspacesPort;
 	/** Reads `workspaces.json` and the core plugin state again. */
 	readonly reloadWorkspaces: () => Promise<void>;
-	readonly graph: GraphOptionsPort;
-	readonly enabledPluginIds: EnabledPluginIds;
 	readonly data: DataOwner;
 	readonly storeFor: (mode: StorageMode) => MetaStore;
 }
 
-/**
- * The use cases behind every command. The graph mode is resolved again for each
- * one, because Obsidian fires no event when another plugin turns on or off.
- */
+/** The use cases behind every command. */
 export class WorkspaceService {
 	private currentRegistry: WorkspaceRegistry;
 
@@ -49,13 +37,6 @@ export class WorkspaceService {
 		await this.currentRegistry.refresh();
 	}
 
-	async graphMode(): Promise<GraphModeResolution> {
-		return resolveGraphMode(
-			this.settings.graphSettings,
-			await this.deps.enabledPluginIds(),
-		);
-	}
-
 	/** In `changed` mode, a layout that cannot be read counts as changed. */
 	async needsPrompt(target: string): Promise<boolean> {
 		const current = this.currentRegistry.activeName();
@@ -67,38 +48,15 @@ export class WorkspaceService {
 			case "always":
 				return true;
 			case "changed":
-				if (this.currentRegistry.hasUnsavedChanges(current)) return true;
-				return (await this.graphMode()).active && this.graphChanged(current);
+				return this.currentRegistry.hasUnsavedChanges(current);
 		}
 	}
 
-	/** No snapshot is no change, so turning graph mode on does not make every workspace ask. */
-	private graphChanged(name: string): boolean {
-		const saved = this.currentRegistry.metaOf(name)?.graph;
-		if (!saved) return false;
-		return graphOptionsDiffer(this.deps.graph.current(), saved);
-	}
-
-	/** The layout goes first, because a workspace must exist before it can carry metadata. */
 	async save(name: string): Promise<void> {
 		await this.currentRegistry.save(name);
-		if (!(await this.graphMode()).active) return;
-
-		const options = this.deps.graph.current();
-		if (options) await this.currentRegistry.setMeta(name, { graph: options });
 	}
 
-	/**
-	 * The graph goes first. `changeLayout` rebuilds every view, and a new graph view
-	 * reads the graph settings as it loads, so it never shows the previous ones.
-	 * `canMutate` is checked because the switch refuses while core Workspaces is on,
-	 * and a refused switch must not leave the graph changed.
-	 */
 	async load(name: string): Promise<void> {
-		if (this.currentRegistry.canMutate() && (await this.graphMode()).active) {
-			const saved = this.currentRegistry.metaOf(name)?.graph;
-			if (saved) await this.deps.graph.apply(saved);
-		}
 		await this.currentRegistry.switchTo(name);
 	}
 

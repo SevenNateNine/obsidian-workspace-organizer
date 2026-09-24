@@ -34,12 +34,11 @@ plugin is on, and it shows a notice.
 
 ## Other features
 
-| Feature         | What it does                                                                                                                 |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Non-destructive | Install and uninstall do not change your workspaces, because the plugin uses `.obsidian/workspaces.json`.                    |
-| Status bar      | Shows the active workspace. You can set the action for left, middle, and right click.                                        |
-| Switch prompt   | Before a switch, the plugin can ask to save the current layout: always, only when the layout changed, or never.              |
-| Graph settings  | Saves the global graph search, filters, color groups, and forces with each workspace. See [Graph settings](#graph-settings). |
+| Feature         | What it does                                                                                                    |
+| --------------- | --------------------------------------------------------------------------------------------------------------- |
+| Non-destructive | Install and uninstall do not change your workspaces, because the plugin uses `.obsidian/workspaces.json`.       |
+| Status bar      | Shows the active workspace. You can set the action for left, middle, and right click.                           |
+| Switch prompt   | Before a switch, the plugin can ask to save the current layout: always, only when the layout changed, or never. |
 
 ## Commands
 
@@ -54,41 +53,12 @@ plugin is on, and it shows a notice.
 To set a hotkey, go to Settings, Hotkeys. Next and previous use the switcher order and skip archived
 workspaces.
 
-## Graph settings
-
-Obsidian has two types of graph view, and they keep their settings in different places.
-
-**Local graph.** Each local graph pane keeps its own settings in the layout. When you save a
-workspace, the layout includes each local graph pane and its settings. The graph setting below does
-not change this.
-
-**Global graph.** Obsidian keeps one set of global graph settings outside the layout, so a saved
-layout cannot hold them. This plugin can save them with each workspace and apply them when you
-switch. It applies them globally, so all global graph panes get the same settings.
-
-Some graph plugins do this better, per pane. For this reason, the setting has three modes:
-
-- **Automatic** (default): save the global graph settings with each workspace. If a plugin that
-  owns the graph is on, do not save them. At this time, these plugins are
-  [Graph Profiles](https://github.com/SevenNateNine/obsidian-graph-profiles), Graph Presets, and
-  Extended Graph. The settings screen shows the plugin that caused this.
-- **Always**: save them in all conditions. If another graph plugin is also on, both plugins write
-  the graph during a switch, and the last one wins.
-- **Never**: do not touch the global graph.
-
-The list of graph plugins cannot be complete. If you use a graph plugin that is not in the list,
-set the mode to Never.
-
-The global graph settings are the one place where this plugin uses an API that Obsidian does not
-document. If a future Obsidian release changes it, only the global graph feature stops. The other
-features continue to work.
-
 ## Where your data is
 
 Your workspaces are in `.obsidian/workspaces.json`, as with the core plugin. The format is always
 the same as the format that the core plugin writes.
 
-Tags, archive flags, order, descriptions, and graph settings are in the `data.json` file of this
+Tags, archive flags, order, and descriptions are in the `data.json` file of this
 plugin. This is the default, called sidecar storage.
 
 You can also select embedded storage. This puts the same data inside `workspaces.json`, under an
@@ -116,12 +86,12 @@ The plugin is inside the vault at `.obsidian/plugins/obsidian-workspace-organize
 The source has three layers. Each layer has one folder for each feature, and each feature folder
 has an `index.ts` for its public API.
 
-| Folder          | Contents                                                                                |
-| --------------- | --------------------------------------------------------------------------------------- |
-| `src/core/`     | The rules. No Obsidian import, so all of it is unit tested.                             |
-| `src/obsidian/` | The Obsidian details: the `workspaces.json` file, the two storage modes, and the graph. |
-| `src/ui/`       | The switcher, the modals, the status bar, the commands, and the settings tab.           |
-| `src/main.ts`   | Builds the parts and connects them.                                                     |
+| Folder          | Contents                                                                      |
+| --------------- | ----------------------------------------------------------------------------- |
+| `src/core/`     | The rules. No Obsidian import, so all of it is unit tested.                   |
+| `src/obsidian/` | The Obsidian details: the `workspaces.json` file, and the two storage modes.  |
+| `src/ui/`       | The switcher, the modals, the status bar, the commands, and the settings tab. |
+| `src/main.ts`   | Builds the parts and connects them.                                           |
 
 `eslint.config.js` enforces the layer rules. See `AGENTS.md` for all conventions.
 
