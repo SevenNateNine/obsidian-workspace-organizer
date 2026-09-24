@@ -1,10 +1,6 @@
+import builtins from "builtin-modules";
 import tseslint from "typescript-eslint";
 
-/**
- * Size limits are enforced here rather than by prose in AGENTS.md, so a
- * function that outgrows its budget fails the lint step instead of relying on
- * a reviewer to notice.
- */
 const SIZE_LIMITS = {
 	"max-lines-per-function": [
 		"error",
@@ -15,35 +11,49 @@ const SIZE_LIMITS = {
 	complexity: ["error", 15],
 };
 
-/**
- * The dependency rule, enforced rather than described.
- *
- * `src/core/` is policy and must not name a framework or a concrete adapter.
- * Use the typescript-eslint rule, not the base one, because a type-only import
- * of an Obsidian type is still a leak.
- *
- * `obsidian-typings` matters most here: it describes undocumented internals
- * that can change between Obsidian releases. Keeping it out of core means a
- * broken internal API breaks one adapter, not the whole plugin.
- */
-const CORE_IMPORT_BOUNDARY = {
-	"@typescript-eslint/no-restricted-imports": [
-		"error",
+// Patterns match import paths from a file in src/<layer>/<feature>/. The
+// typescript-eslint rule also catches a type-only import, which is still a leak.
+
+const BARREL_ONLY = [
+	{
+		regex: "^\\.\\./[^./][^/]*/.",
+		message: "Import a sibling feature through its index.ts.",
+	},
+	{
+		regex: "^\\.\\./\\.\\./(core|obsidian|ui)/[^/]+/.",
+		message: "Import a feature of another layer through its index.ts.",
+	},
+];
+
+const NODE_MESSAGE = "Obsidian mobile has no Node, and isDesktopOnly is false.";
+const NO_NODE = [
+	{ regex: "^node:", message: NODE_MESSAGE },
+	{ regex: `^(${builtins.join("|")})(/.*)?$`, message: NODE_MESSAGE },
+];
+
+const layer = (dir, message) => ({ regex: `^\\.\\./\\.\\./${dir}(/|$)`, message });
+
+const LAYERS = {
+	core: [
+		...BARREL_ONLY,
 		{
-			patterns: [
-				{
-					group: ["obsidian", "obsidian-typings"],
-					message:
-						"core is policy. Declare a port in core/ports.ts and implement it under adapters/.",
-				},
-				{
-					group: ["**/adapters/**", "**/ui/**"],
-					message: "core must not import a detail. Invert the dependency.",
-				},
-			],
+			regex: "^obsidian(-typings)?$",
+			message:
+				"core is policy. Declare a port in core and implement it in src/obsidian.",
 		},
+		layer("obsidian", "core must not import a detail. Invert the dependency."),
+		layer("ui", "core must not import the UI."),
+	],
+	obsidian: [...BARREL_ONLY, layer("ui", "An adapter must not import the UI.")],
+	ui: [
+		...BARREL_ONLY,
+		layer("obsidian", "The UI gets adapters from main.ts, not by import."),
 	],
 };
+
+const restrict = (patterns) => ({
+	"@typescript-eslint/no-restricted-imports": ["error", { patterns }],
+});
 
 export default tseslint.config(
 	{ ignores: ["main.js", "node_modules/**"] },
@@ -63,20 +73,25 @@ export default tseslint.config(
 		},
 	},
 	{
-		files: ["src/core/**/*.ts"],
-		ignores: ["src/core/**/*.test.ts"],
-		rules: CORE_IMPORT_BOUNDARY,
+		files: ["src/main.ts"],
+		rules: restrict([
+			...NO_NODE,
+			{
+				regex: "^\\./(core|obsidian|ui)/[^/]+/.",
+				message: "Import a feature through its index.ts.",
+			},
+		]),
 	},
-	{
-		// Obsidian settings screens are one long declarative builder chain per
-		// tab. Splitting them to satisfy a line budget hurts more than it helps.
-		files: ["src/ui/settings/SettingsTab.ts"],
-		rules: { "max-lines-per-function": "off" },
-	},
-	{
-		// A table-driven test case is one `it()` per behaviour; the budget is
-		// about production control flow, not assertion count.
-		files: ["src/**/*.test.ts"],
-		rules: { "max-lines-per-function": "off" },
-	},
+	...Object.entries(LAYERS).flatMap(([dir, patterns]) => [
+		{
+			files: [`src/${dir}/**/*.ts`],
+			ignores: ["src/**/*.test.ts"],
+			rules: restrict([...patterns, ...NO_NODE]),
+		},
+		{
+			// A test reads the round-trip fixture from disk, so Node is allowed here.
+			files: [`src/${dir}/**/*.test.ts`],
+			rules: restrict(patterns),
+		},
+	]),
 );
