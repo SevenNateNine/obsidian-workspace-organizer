@@ -1,4 +1,4 @@
-import { LIVE_ONLY_KEY } from "./workspaceFile";
+import { LIVE_ONLY_KEY } from "../workspaces/workspaceFile";
 
 /** A stored entry carries this; the live layout does not. */
 const STORED_ONLY_KEY = "mtime";

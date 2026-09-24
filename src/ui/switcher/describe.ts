@@ -1,5 +1,5 @@
-import { formatSummary, summarizeLayout } from "../core/domain/layoutSummary";
-import type { WorkspaceMeta } from "../core/domain/types";
+import { formatSummary, summarizeLayout } from "../../core/layout/layoutSummary";
+import type { WorkspaceMeta } from "../../core/settings/settings";
 
 export interface Described {
 	/** The subtext line. */

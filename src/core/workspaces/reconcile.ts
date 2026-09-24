@@ -1,4 +1,4 @@
-import { defaultMeta, type WorkspaceMeta } from "./types";
+import { defaultMeta, type WorkspaceMeta } from "../settings/settings";
 
 export interface Reconciled {
 	workspaces: Record<string, WorkspaceMeta>;

@@ -1,9 +1,9 @@
-import { WorkspaceError } from "./errors";
+import { WorkspaceError } from "../shared/errors";
 import type { MetaStore, WorkspacesPort } from "./ports";
-import { layoutsDiffer } from "./domain/layoutDiff";
-import { move, reconcile, renameKey, sortedNames } from "./domain/reconcile";
-import { hasAllTags } from "./domain/tags";
-import { defaultMeta, type WorkspaceMeta } from "./domain/types";
+import { layoutsDiffer } from "../layout/layoutDiff";
+import { move, reconcile, renameKey, sortedNames } from "./reconcile";
+import { hasAllTags } from "../organize/tags";
+import { defaultMeta, type WorkspaceMeta } from "../settings/settings";
 
 export interface WorkspaceEntry {
 	name: string;

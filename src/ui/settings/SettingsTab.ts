@@ -1,8 +1,8 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
-import type WorkspaceOrganizerPlugin from "../main";
-import type { StatusBarAction, SwitchPrompt } from "../core/domain/types";
-import type { GraphMode, GraphModeResolution } from "../core/domain/graphOwners";
-import { describe } from "./describe";
+import type WorkspaceOrganizerPlugin from "../../main";
+import type { StatusBarAction, SwitchPrompt } from "../../core/settings/settings";
+import type { GraphMode, GraphModeResolution } from "../../core/graph/graphOwners";
+import { describe } from "../switcher/describe";
 
 const ACTION_LABELS: Record<StatusBarAction, string> = {
 	none: "Do nothing",

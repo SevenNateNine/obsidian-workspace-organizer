@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { migrateData, normalizeMeta } from "./migrations";
-import { CURRENT_SCHEMA_VERSION, DEFAULT_SETTINGS } from "./types";
+import { CURRENT_SCHEMA_VERSION, DEFAULT_SETTINGS } from "../settings/settings";
 
 describe("migrateData", () => {
 	it("returns defaults for a first run", () => {

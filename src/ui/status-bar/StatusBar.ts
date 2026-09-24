@@ -1,5 +1,5 @@
 import { Menu } from "obsidian";
-import type { StatusBarAction, StatusBarSettings } from "../core/domain/types";
+import type { StatusBarAction, StatusBarSettings } from "../../core/settings/settings";
 
 export interface StatusBarDeps {
 	settings: () => StatusBarSettings;

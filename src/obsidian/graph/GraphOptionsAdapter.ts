@@ -1,5 +1,5 @@
 import type { App } from "obsidian";
-import type { GraphOptionsPort } from "../../core/ports";
+import type { GraphOptionsPort } from "../../core/workspaces/ports";
 
 const GRAPH_PLUGIN_ID = "graph";
 

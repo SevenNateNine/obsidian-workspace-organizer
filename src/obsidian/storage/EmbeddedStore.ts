@@ -1,6 +1,6 @@
-import type { EmbeddedMetaPort, MetaStore } from "../../core/ports";
-import { normalizeMetaMap } from "../../core/domain/migrations";
-import type { WorkspaceMeta } from "../../core/domain/types";
+import type { EmbeddedMetaPort, MetaStore } from "../../core/workspaces/ports";
+import { normalizeMetaMap } from "../../core/storage/migrations";
+import type { WorkspaceMeta } from "../../core/settings/settings";
 
 /**
  * Keeps workspace metadata inside `workspaces.json`, next to each layout.

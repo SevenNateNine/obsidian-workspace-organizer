@@ -1,21 +1,25 @@
 import { Menu, Notice, Plugin } from "obsidian";
-import { WorkspaceRegistry } from "./core/WorkspaceRegistry";
-import { userMessage } from "./core/errors";
-import type { MetaStore } from "./core/ports";
-import { graphOptionsDiffer } from "./core/domain/layoutDiff";
-import { migrateData } from "./core/domain/migrations";
-import { resolveGraphMode, type GraphModeResolution } from "./core/domain/graphOwners";
-import type { PersistedData, StatusBarAction, StorageMode } from "./core/domain/types";
-import { enabledCommunityPluginIds } from "./adapters/obsidian/pluginState";
-import { DirectWorkspacesAdapter } from "./adapters/obsidian/DirectWorkspacesAdapter";
-import { GraphOptionsAdapter } from "./adapters/obsidian/GraphOptionsAdapter";
-import { EmbeddedStore } from "./adapters/obsidian/EmbeddedStore";
-import { SidecarStore, type DataOwner } from "./adapters/obsidian/SidecarStore";
-import { SwitcherModal } from "./ui/SwitcherModal";
-import { WorkspaceEditModal } from "./ui/WorkspaceEditModal";
-import { SettingsTab } from "./ui/SettingsTab";
-import { StatusBar } from "./ui/statusBar";
-import { ConfirmModal, PromptModal, SaveOnSwitchModal } from "./ui/prompts";
+import { WorkspaceRegistry } from "./core/workspaces/WorkspaceRegistry";
+import { userMessage } from "./core/shared/errors";
+import type { MetaStore } from "./core/workspaces/ports";
+import { graphOptionsDiffer } from "./core/layout/layoutDiff";
+import { migrateData } from "./core/storage/migrations";
+import { resolveGraphMode, type GraphModeResolution } from "./core/graph/graphOwners";
+import type {
+	PersistedData,
+	StatusBarAction,
+	StorageMode,
+} from "./core/settings/settings";
+import { enabledCommunityPluginIds } from "./obsidian/plugins/pluginState";
+import { DirectWorkspacesAdapter } from "./obsidian/workspaces/DirectWorkspacesAdapter";
+import { GraphOptionsAdapter } from "./obsidian/graph/GraphOptionsAdapter";
+import { EmbeddedStore } from "./obsidian/storage/EmbeddedStore";
+import { SidecarStore, type DataOwner } from "./obsidian/storage/SidecarStore";
+import { SwitcherModal } from "./ui/switcher/SwitcherModal";
+import { WorkspaceEditModal } from "./ui/editor/WorkspaceEditModal";
+import { SettingsTab } from "./ui/settings/SettingsTab";
+import { StatusBar } from "./ui/status-bar/StatusBar";
+import { ConfirmModal, PromptModal, SaveOnSwitchModal } from "./ui/shared/PromptModal";
 
 /**
  * Composition root and Obsidian adapter.

@@ -11,9 +11,9 @@ import {
 	type StorageMode,
 	type SwitchPrompt,
 	type WorkspaceMeta,
-} from "./types";
-import { GRAPH_MODES, type GraphMode } from "./graphOwners";
-import { dedupe, normalizeTag } from "./tags";
+} from "../settings/settings";
+import { GRAPH_MODES, type GraphMode } from "../graph/graphOwners";
+import { dedupe, normalizeTag } from "../organize/tags";
 
 /**
  * Bring persisted data up to the current schema.

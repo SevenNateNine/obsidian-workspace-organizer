@@ -70,7 +70,7 @@ export default tseslint.config(
 	{
 		// Obsidian settings screens are one long declarative builder chain per
 		// tab. Splitting them to satisfy a line budget hurts more than it helps.
-		files: ["src/ui/SettingsTab.ts"],
+		files: ["src/ui/settings/SettingsTab.ts"],
 		rules: { "max-lines-per-function": "off" },
 	},
 	{

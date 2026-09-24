@@ -1,4 +1,4 @@
-import type { GraphMode } from "./graphOwners";
+import type { GraphMode } from "../graph/graphOwners";
 
 /** Bump when a stored shape changes in a way `migrateData` must handle. */
 export const CURRENT_SCHEMA_VERSION = 1;
